@@ -9,6 +9,7 @@ workflows:
       cocoapods: default
       groups:
         - app_store_credentials
+        - firebase_credentials
       vars:
         BUNDLE_ID: "com.drparrilla.app"
     triggering:
@@ -19,6 +20,9 @@ workflows:
           include: true
           source: true
     scripts:
+      - name: Inject GoogleService-Info.plist
+        script: |
+          echo $GOOGLE_SERVICE_INFO_PLIST | base64 --decode > $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
       - name: Set up code signing
         script: |
           keychain initialize
