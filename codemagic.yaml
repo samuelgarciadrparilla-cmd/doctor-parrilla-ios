@@ -70,7 +70,6 @@ workflows:
       flutter: stable
       java: 17
       groups:
-        - play_store_credentials
         - firebase_credentials
       vars:
         PACKAGE_NAME: "com.drparrilla.app"
