@@ -141,8 +141,8 @@ workflows:
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
           xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 20
-          mkdir -p screenshots
-          xcrun simctl io "$UDID" screenshot screenshots/screenshot_69.png
+          mkdir -p "$CM_BUILD_DIR/screenshots"
+          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_69.png"
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
       - name: Screenshot - iPhone 11 Pro Max (6.5")
@@ -157,8 +157,9 @@ workflows:
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
           xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 20
-          xcrun simctl io "$UDID" screenshot screenshots/screenshot_65.png
+          mkdir -p "$CM_BUILD_DIR/screenshots"
+          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_65.png"
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
     artifacts:
-      - screenshots/*.png
+      - $CM_BUILD_DIR/screenshots/*.png
