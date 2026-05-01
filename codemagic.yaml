@@ -131,22 +131,34 @@ workflows:
           flutter build ios --simulator
       - name: Screenshot - iPhone 16 Pro Max (6.9")
         script: |
-          xcrun simctl shutdown "iPhone 16 Pro Max" 2>/dev/null || true
-          xcrun simctl boot "iPhone 16 Pro Max"
-          xcrun simctl install booted build/ios/iphonesimulator/Runner.app
-          xcrun simctl launch booted "$BUNDLE_ID"
+          RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
+          import sys, json
+          runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
+          print(sorted(runtimes, key=lambda x: x['version'])[-1]['identifier'])
+          ")
+          UDID=$(xcrun simctl create "screenshot-69" "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max" "$RUNTIME")
+          xcrun simctl boot "$UDID"
+          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
+          xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 20
           mkdir -p screenshots
-          xcrun simctl io booted screenshot screenshots/screenshot_69.png
-          xcrun simctl shutdown booted
+          xcrun simctl io "$UDID" screenshot screenshots/screenshot_69.png
+          xcrun simctl shutdown "$UDID"
+          xcrun simctl delete "$UDID"
       - name: Screenshot - iPhone 11 Pro Max (6.5")
         script: |
-          xcrun simctl shutdown "iPhone 11 Pro Max" 2>/dev/null || true
-          xcrun simctl boot "iPhone 11 Pro Max"
-          xcrun simctl install booted build/ios/iphonesimulator/Runner.app
-          xcrun simctl launch booted "$BUNDLE_ID"
+          RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
+          import sys, json
+          runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
+          print(sorted(runtimes, key=lambda x: x['version'])[-1]['identifier'])
+          ")
+          UDID=$(xcrun simctl create "screenshot-65" "com.apple.CoreSimulator.SimDeviceType.iPhone-11-Pro-Max" "$RUNTIME")
+          xcrun simctl boot "$UDID"
+          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
+          xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 20
-          xcrun simctl io booted screenshot screenshots/screenshot_65.png
-          xcrun simctl shutdown booted
+          xcrun simctl io "$UDID" screenshot screenshots/screenshot_65.png
+          xcrun simctl shutdown "$UDID"
+          xcrun simctl delete "$UDID"
     artifacts:
       - screenshots/*.png
