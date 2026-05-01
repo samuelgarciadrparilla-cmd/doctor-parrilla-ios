@@ -103,3 +103,50 @@ workflows:
         notify:
           success: true
           failure: true
+
+  screenshots:
+    name: App Store Screenshots
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - firebase_credentials
+      vars:
+        BUNDLE_ID: "com.drparrilla.app"
+    scripts:
+      - name: Inject GoogleService-Info.plist
+        script: |
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      - name: Install CocoaPods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Build for simulator
+        script: |
+          flutter build ios --simulator
+      - name: Screenshot - iPhone 16 Pro Max (6.9")
+        script: |
+          xcrun simctl shutdown "iPhone 16 Pro Max" 2>/dev/null || true
+          xcrun simctl boot "iPhone 16 Pro Max"
+          xcrun simctl install booted build/ios/iphonesimulator/Runner.app
+          xcrun simctl launch booted "$BUNDLE_ID"
+          sleep 20
+          mkdir -p screenshots
+          xcrun simctl io booted screenshot screenshots/screenshot_69.png
+          xcrun simctl shutdown booted
+      - name: Screenshot - iPhone 11 Pro Max (6.5")
+        script: |
+          xcrun simctl shutdown "iPhone 11 Pro Max" 2>/dev/null || true
+          xcrun simctl boot "iPhone 11 Pro Max"
+          xcrun simctl install booted build/ios/iphonesimulator/Runner.app
+          xcrun simctl launch booted "$BUNDLE_ID"
+          sleep 20
+          xcrun simctl io booted screenshot screenshots/screenshot_65.png
+          xcrun simctl shutdown booted
+    artifacts:
+      - screenshots/*.png
