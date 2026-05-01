@@ -105,7 +105,7 @@ workflows:
           flutter build appbundle \
             --release \
             --build-name=1.0.0 \
-            --build-number=7
+            --build-number=127
     artifacts:
       - build/app/outputs/bundle/release/*.aab
     publishing:
