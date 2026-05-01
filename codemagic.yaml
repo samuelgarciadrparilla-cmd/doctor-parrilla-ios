@@ -22,7 +22,13 @@ workflows:
     scripts:
       - name: Inject GoogleService-Info.plist
         script: |
-          echo $GOOGLE_SERVICE_INFO_PLIST | base64 --decode > $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      - name: Install CocoaPods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
       - name: Set up code signing
         script: |
           keychain initialize
@@ -32,12 +38,6 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
-      - name: Get Flutter packages
-        script: |
-          flutter packages pub get
-      - name: Install CocoaPods
-        script: |
-          find . -name "Podfile" -execdir pod install \;
       - name: Build IPA
         script: |
           flutter build ipa \
@@ -85,10 +85,10 @@ workflows:
     scripts:
       - name: Inject google-services.json
         script: |
-          echo $GOOGLE_SERVICES_JSON | base64 --decode > $CM_BUILD_DIR/android/app/google-services.json
+          echo "$GOOGLE_SERVICES_JSON" | base64 --decode > $CM_BUILD_DIR/android/app/google-services.json
       - name: Get Flutter packages
         script: |
-          flutter packages pub get
+          flutter pub get
       - name: Build AAB
         script: |
           flutter build appbundle \

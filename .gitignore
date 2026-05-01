@@ -51,3 +51,6 @@ GoogleService-Info.plist
 # iOS Pods
 ios/Pods/
 ios/.symlinks/
+
+# Local CI/CD helper scripts
+setup_codemagic_vars.sh
