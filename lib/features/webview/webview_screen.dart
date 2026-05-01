@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -32,7 +32,7 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   StreamSubscription<bool>? _connectivitySubscription;
   StreamSubscription<String>? _notificationUrlSubscription;
-  StreamSubscription<dynamic>? _foregroundMessageSubscription;
+  StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
 
   @override
   void initState() {
@@ -152,9 +152,7 @@ class _WebViewScreenState extends State<WebViewScreen>
     // Show in-app banner for foreground notifications
     _foregroundMessageSubscription =
         FirebaseService.instance.onForegroundMessage.listen(
-      (dynamic message) {
-        _showInAppNotification(message);
-      },
+      _showInAppNotification,
     );
   }
 
@@ -179,7 +177,7 @@ class _WebViewScreenState extends State<WebViewScreen>
     }
   }
 
-  void _showInAppNotification(dynamic message) {
+  void _showInAppNotification(RemoteMessage message) {
     if (!mounted) return;
     final String title = message.notification?.title ?? '';
     final String body = message.notification?.body ?? '';
