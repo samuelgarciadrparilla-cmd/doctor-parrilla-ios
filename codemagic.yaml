@@ -44,7 +44,7 @@ workflows:
             --release \
             --build-name=1.0.0 \
             --build-number=1 \
-            --export-options-plist=/Users/builder/export_options.plist
+            --export-options-plist=$HOME/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
@@ -72,6 +72,7 @@ workflows:
       java: 17
       groups:
         - play_store_credentials
+        - firebase_credentials
       vars:
         PACKAGE_NAME: "com.drparrilla.app"
     triggering:
@@ -82,6 +83,9 @@ workflows:
           include: true
           source: true
     scripts:
+      - name: Inject google-services.json
+        script: |
+          echo $GOOGLE_SERVICES_JSON | base64 --decode > $CM_BUILD_DIR/android/app/google-services.json
       - name: Get Flutter packages
         script: |
           flutter packages pub get
