@@ -22,7 +22,7 @@ workflows:
     scripts:
       - name: Inject GoogleService-Info.plist
         script: |
-          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
       - name: Get Flutter packages
         script: |
           flutter pub get
@@ -43,8 +43,7 @@ workflows:
           flutter build ipa \
             --release \
             --build-name=1.0.0 \
-            --build-number=1 \
-            --export-options-plist=$HOME/export_options.plist
+            --build-number=1
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
