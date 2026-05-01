@@ -12,7 +12,12 @@ class FirebaseService {
   FirebaseService._internal();
   static final FirebaseService instance = FirebaseService._internal();
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  // Lazy — don't access FirebaseMessaging.instance until Firebase is initialized
+  FirebaseMessaging? _messagingInstance;
+  FirebaseMessaging get _messaging {
+    _messagingInstance ??= FirebaseMessaging.instance;
+    return _messagingInstance!;
+  }
 
   final StreamController<RemoteMessage> _foregroundMessageController =
       StreamController<RemoteMessage>.broadcast();
@@ -27,7 +32,9 @@ class FirebaseService {
 
   /// Initialize Firebase and set up message handlers.
   Future<void> initialize() async {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    }
 
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {

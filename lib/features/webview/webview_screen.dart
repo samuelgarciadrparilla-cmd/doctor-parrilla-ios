@@ -42,8 +42,10 @@ class _WebViewScreenState extends State<WebViewScreen>
     WidgetsBinding.instance.addObserver(this);
     _initializeWebView();
     _setupConnectivityListener();
-    _setupNotificationListeners();
-    _checkNotificationPermission();
+    try {
+      _setupNotificationListeners();
+    } catch (_) {}
+    _checkNotificationPermission().catchError((_) {});
   }
 
   @override
