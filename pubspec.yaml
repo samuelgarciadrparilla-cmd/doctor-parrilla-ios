@@ -1,7 +1,7 @@
 name: dr_parrilla_app
 description: "Doctor Parrilla Paraguay - Parrillas Premium de Acero Inoxidable"
 publish_to: 'none'
-version: 1.0.0+5
+version: 1.0.0+6
 
 environment:
   sdk: ^3.7.0

@@ -71,6 +71,7 @@ workflows:
       java: 17
       groups:
         - firebase_credentials
+        - android_signing
       vars:
         PACKAGE_NAME: "com.drparrilla.app"
     triggering:
@@ -84,6 +85,15 @@ workflows:
       - name: Inject google-services.json
         script: |
           echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
+      - name: Inject keystore and key.properties
+        script: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-key.jks
+          cat > android/key.properties <<EOF
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=app/upload-key.jks
+          EOF
       - name: Get Flutter packages
         script: |
           flutter pub get
@@ -95,7 +105,7 @@ workflows:
           flutter build appbundle \
             --release \
             --build-name=1.0.0 \
-            --build-number=5
+            --build-number=6
     artifacts:
       - build/app/outputs/bundle/release/*.aab
     publishing:
