@@ -33,7 +33,11 @@ Future<void> main() async {
     // Firebase may not be configured yet (first build without google-services)
     debugPrint('Firebase initialization skipped: $e');
   }
-  ConnectivityService.instance.initialize();
+  try {
+    ConnectivityService.instance.initialize();
+  } catch (e) {
+    debugPrint('ConnectivityService initialization skipped: $e');
+  }
 
   runApp(const DrParrillaApp());
 }
