@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -273,20 +275,14 @@ class _WebViewScreenState extends State<WebViewScreen>
       case WebViewState.loaded:
         return Stack(
           children: <Widget>[
-            // WebView with pull-to-refresh
-            RefreshIndicator(
-              onRefresh: _handleRefresh,
-              color: AppTheme.accentGold,
-              backgroundColor: AppTheme.primaryBlack,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height,
-                  child: WebViewWidget(controller: _controller),
+            WebViewWidget(
+              controller: _controller,
+              gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                Factory<VerticalDragGestureRecognizer>(
+                  () => VerticalDragGestureRecognizer(),
                 ),
-              ),
+              },
             ),
-            // Loading overlay with fade transition
             if (_state == WebViewState.loading)
               AnimatedOpacity(
                 opacity: _state == WebViewState.loading ? 1.0 : 0.0,
