@@ -84,7 +84,7 @@ workflows:
     scripts:
       - name: Inject google-services.json
         script: |
-          echo "$GOOGLE_SERVICES_JSON" | base64 --decode > $CM_BUILD_DIR/android/app/google-services.json
+          echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
       - name: Get Flutter packages
         script: |
           flutter pub get

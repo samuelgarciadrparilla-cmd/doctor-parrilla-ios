@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/constants.dart';
+import '../../firebase_options.dart';
 
 /// Handles all Firebase Cloud Messaging operations.
 /// Requests permission contextually (not on first launch).
@@ -26,7 +27,7 @@ class FirebaseService {
 
   /// Initialize Firebase and set up message handlers.
   Future<void> initialize() async {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -144,5 +145,5 @@ class FirebaseService {
 /// Top-level background message handler (required by Firebase).
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
