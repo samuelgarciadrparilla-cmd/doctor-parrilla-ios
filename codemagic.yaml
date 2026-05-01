@@ -87,12 +87,15 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter pub get
+      - name: Generate launcher icons
+        script: |
+          flutter pub run flutter_launcher_icons
       - name: Build AAB
         script: |
           flutter build appbundle \
             --release \
             --build-name=1.0.0 \
-            --build-number=1
+            --build-number=5
     artifacts:
       - build/app/outputs/bundle/release/*.aab
     publishing:

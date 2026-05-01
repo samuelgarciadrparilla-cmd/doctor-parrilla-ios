@@ -58,6 +58,7 @@ class _WebViewScreenState extends State<WebViewScreen>
   void _initializeWebView() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0xFF080808))
       ..setUserAgent(AppConstants.userAgent)
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -280,6 +281,12 @@ class _WebViewScreenState extends State<WebViewScreen>
               gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
                 Factory<VerticalDragGestureRecognizer>(
                   () => VerticalDragGestureRecognizer(),
+                ),
+                Factory<HorizontalDragGestureRecognizer>(
+                  () => HorizontalDragGestureRecognizer(),
+                ),
+                Factory<TapGestureRecognizer>(
+                  () => TapGestureRecognizer(),
                 ),
               },
             ),
