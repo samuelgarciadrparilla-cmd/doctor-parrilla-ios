@@ -73,7 +73,7 @@ workflows:
         - firebase_credentials
         - android_signing
       vars:
-        PACKAGE_NAME: "com.drparrilla.app"
+        PACKAGE_NAME: "com.drparrilla.paraguay"
     triggering:
       events:
         - push
@@ -105,7 +105,7 @@ workflows:
           flutter build appbundle \
             --release \
             --build-name=1.0.0 \
-            --build-number=6
+            --build-number=7
     artifacts:
       - build/app/outputs/bundle/release/*.aab
     publishing:

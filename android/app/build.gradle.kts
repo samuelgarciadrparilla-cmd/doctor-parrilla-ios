@@ -40,7 +40,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.drparrilla.app"
+        applicationId = "com.drparrilla.paraguay"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
