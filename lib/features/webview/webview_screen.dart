@@ -32,6 +32,9 @@ class _WebViewScreenState extends State<WebViewScreen>
   WebViewState _state = WebViewState.loading;
   double _loadingProgress = 0;
   bool _canGoBack = false;
+  DateTime? _backgroundedAt;
+
+  static const Duration _refreshThreshold = Duration(minutes: 10);
 
   StreamSubscription<bool>? _connectivitySubscription;
   StreamSubscription<String>? _notificationUrlSubscription;
@@ -56,6 +59,19 @@ class _WebViewScreenState extends State<WebViewScreen>
     _notificationUrlSubscription?.cancel();
     _foregroundMessageSubscription?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _backgroundedAt = DateTime.now();
+    } else if (state == AppLifecycleState.resumed && _backgroundedAt != null) {
+      final Duration elapsed = DateTime.now().difference(_backgroundedAt!);
+      _backgroundedAt = null;
+      if (elapsed >= _refreshThreshold) {
+        _loadPage();
+      }
+    }
   }
 
   void _initializeWebView() {
