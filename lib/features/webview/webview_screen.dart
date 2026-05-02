@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../app/constants.dart';
 import '../../core/connectivity/connectivity_service.dart';
@@ -101,11 +102,13 @@ class _WebViewScreenState extends State<WebViewScreen>
             }
           },
           onNavigationRequest: (NavigationRequest request) {
-            // Open external links in system browser
-            final Uri uri = Uri.parse(request.url);
-            if (!request.url.startsWith(AppConstants.baseUrl) &&
-                !request.url.startsWith('about:')) {
-              _openExternalUrl(request.url);
+            final String url = request.url;
+            // PDFs can't render in WebView — open in system browser
+            final bool isPdf = url.toLowerCase().contains('.pdf');
+            final bool isExternal = !url.startsWith(AppConstants.baseUrl) &&
+                !url.startsWith('about:');
+            if (isPdf || isExternal) {
+              _openExternalUrl(url);
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
@@ -223,15 +226,12 @@ class _WebViewScreenState extends State<WebViewScreen>
   }
 
   Future<void> _openExternalUrl(String url) async {
-    // Use platform channel to open in system browser
-    // This ensures external links don't stay inside the WebView
     try {
-      await _controller.runJavaScript(
-        'window.open("$url", "_system");',
-      );
-    } catch (_) {
-      // Fallback: do nothing, link was already prevented
-    }
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
   }
 
   Future<void> _handleRefresh() async {
