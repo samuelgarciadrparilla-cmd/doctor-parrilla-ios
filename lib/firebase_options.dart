@@ -17,7 +17,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyC71yR8sCfzVeIJocRX8oN30DK56IclgLg',
-    appId: '1:413995246042:android:d824773454176b642220e3',
+    appId: '1:413995246042:android:06132243a72be3c92220e3',
     messagingSenderId: '413995246042',
     projectId: 'doctor-parrilla-clientes',
     storageBucket: 'doctor-parrilla-clientes.firebasestorage.app',
