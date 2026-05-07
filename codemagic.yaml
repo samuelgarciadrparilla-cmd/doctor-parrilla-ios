@@ -196,13 +196,14 @@ workflows:
           ")
           UDID=$(xcrun simctl create "screenshot-ipad-129" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" "$RUNTIME")
           xcrun simctl boot "$UDID"
-          xcrun simctl bootstatus "$UDID" -b
+          timeout 600 xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
           xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 25
           mkdir -p "$CM_BUILD_DIR/screenshots"
+          sleep 20
           xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_129.png" \
-            || (sleep 10 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_129.png")
+            || (sleep 15 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_129.png")
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
       - name: Screenshot - iPad Pro 13" (M4)
