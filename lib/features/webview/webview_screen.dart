@@ -296,6 +296,7 @@ class _WebViewScreenState extends State<WebViewScreen>
           children: <Widget>[
             WebViewWidget(
               controller: _controller,
+              backgroundColor: Colors.black,
               gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
                 Factory<VerticalDragGestureRecognizer>(
                   () => VerticalDragGestureRecognizer(),

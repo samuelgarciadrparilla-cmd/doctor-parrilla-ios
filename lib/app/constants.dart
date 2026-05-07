@@ -11,11 +11,12 @@ class AppConstants {
   static const String appName = 'Doctor Parrilla';
   static const String appVersion = '1.0.0';
   static const String bundleId = 'com.drparrilla.app';
-  static const String userAgent = 'DrParrillaApp/1.0 Flutter';
+  static const String userAgent =
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
   // ─── Brand Colors (hex) ─────────────────────────────────
   static const int primaryBlack = 0xFF000000;
-  static const int accentGold = 0xFFD4A843;
+  static const int accentGold = 0xFFD4AF37;
   static const int accentRed = 0xFFE85D2A;
   static const int textWhite = 0xFFFFFFFF;
   static const int surfaceDark = 0xFF1A1A1A;

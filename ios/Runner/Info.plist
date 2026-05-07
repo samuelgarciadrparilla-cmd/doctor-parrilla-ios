@@ -85,6 +85,13 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 
+	<!-- Allow all HTTP/HTTPS loads in WKWebView -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+
 	<!-- url_launcher: required for canLaunchUrl with https/http on iOS -->
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
