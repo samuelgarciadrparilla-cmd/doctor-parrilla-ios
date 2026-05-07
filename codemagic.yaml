@@ -194,7 +194,18 @@ workflows:
           runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
           print(sorted(runtimes, key=lambda x: x['version'])[-1]['identifier'])
           ")
-          UDID=$(xcrun simctl create "screenshot-ipad-129" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" "$RUNTIME")
+          DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
+          import sys, json
+          types = json.load(sys.stdin)['devicetypes']
+          # Buscar iPad Pro 12.9 (cualquier variante de RAM/generación), fallback 13'
+          for needle in ['iPad Pro 12.9-inch', 'iPad Pro (12.9-inch)', 'iPad Pro 13-inch', 'iPad Pro (13-inch)']:
+              for t in types:
+                  if needle in t['name']:
+                      print(t['identifier']); sys.exit(0)
+          sys.exit(1)
+          ")
+          echo "Using device type: $DEVICE_TYPE"
+          UDID=$(xcrun simctl create "screenshot-ipad-129" "$DEVICE_TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
           timeout 600 xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
@@ -214,7 +225,17 @@ workflows:
           runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
           print(sorted(runtimes, key=lambda x: x['version'])[-1]['identifier'])
           ")
-          UDID=$(xcrun simctl create "screenshot-ipad-13" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4" "$RUNTIME")
+          DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
+          import sys, json
+          types = json.load(sys.stdin)['devicetypes']
+          for needle in ['iPad Pro 13-inch', 'iPad Pro (13-inch)', 'iPad Pro 12.9-inch']:
+              for t in types:
+                  if needle in t['name']:
+                      print(t['identifier']); sys.exit(0)
+          sys.exit(1)
+          ")
+          echo "Using device type: $DEVICE_TYPE"
+          UDID=$(xcrun simctl create "screenshot-ipad-13" "$DEVICE_TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
