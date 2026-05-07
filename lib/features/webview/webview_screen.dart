@@ -294,20 +294,22 @@ class _WebViewScreenState extends State<WebViewScreen>
       case WebViewState.loaded:
         return Stack(
           children: <Widget>[
-            WebViewWidget(
-              controller: _controller,
-              backgroundColor: Colors.black,
-              gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-                Factory<VerticalDragGestureRecognizer>(
-                  () => VerticalDragGestureRecognizer(),
-                ),
-                Factory<HorizontalDragGestureRecognizer>(
-                  () => HorizontalDragGestureRecognizer(),
-                ),
-                Factory<TapGestureRecognizer>(
-                  () => TapGestureRecognizer(),
-                ),
-              },
+            ColoredBox(
+              color: Colors.black,
+              child: WebViewWidget(
+                controller: _controller,
+                gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                  Factory<VerticalDragGestureRecognizer>(
+                    () => VerticalDragGestureRecognizer(),
+                  ),
+                  Factory<HorizontalDragGestureRecognizer>(
+                    () => HorizontalDragGestureRecognizer(),
+                  ),
+                  Factory<TapGestureRecognizer>(
+                    () => TapGestureRecognizer(),
+                  ),
+                },
+              ),
             ),
             if (_state == WebViewState.loading)
               AnimatedOpacity(
