@@ -150,6 +150,7 @@ workflows:
           flutter build ios --simulator
       - name: Screenshot - iPhone 16 Pro Max (6.9")
         script: |
+          xcrun simctl shutdown all 2>/dev/null || true
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
           runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
@@ -157,15 +158,18 @@ workflows:
           ")
           UDID=$(xcrun simctl create "screenshot-69" "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max" "$RUNTIME")
           xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
           xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 20
           mkdir -p "$CM_BUILD_DIR/screenshots"
-          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_69.png"
+          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_69.png" \
+            || (sleep 10 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_69.png")
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
       - name: Screenshot - iPhone 11 Pro Max (6.5")
         script: |
+          xcrun simctl shutdown all 2>/dev/null || true
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
           runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
@@ -173,15 +177,18 @@ workflows:
           ")
           UDID=$(xcrun simctl create "screenshot-65" "com.apple.CoreSimulator.SimDeviceType.iPhone-11-Pro-Max" "$RUNTIME")
           xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
           xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 20
           mkdir -p "$CM_BUILD_DIR/screenshots"
-          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_65.png"
+          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_65.png" \
+            || (sleep 10 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_65.png")
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
       - name: Screenshot - iPad Pro 12.9" (6th gen)
         script: |
+          xcrun simctl shutdown all 2>/dev/null || true
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
           runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
@@ -189,15 +196,18 @@ workflows:
           ")
           UDID=$(xcrun simctl create "screenshot-ipad-129" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" "$RUNTIME")
           xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
           xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 25
           mkdir -p "$CM_BUILD_DIR/screenshots"
-          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_129.png"
+          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_129.png" \
+            || (sleep 10 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_129.png")
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
       - name: Screenshot - iPad Pro 13" (M4)
         script: |
+          xcrun simctl shutdown all 2>/dev/null || true
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
           runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
@@ -205,11 +215,13 @@ workflows:
           ")
           UDID=$(xcrun simctl create "screenshot-ipad-13" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4" "$RUNTIME")
           xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
           xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 25
           mkdir -p "$CM_BUILD_DIR/screenshots"
-          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_13.png"
+          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_13.png" \
+            || (sleep 10 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_13.png")
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
     artifacts:
