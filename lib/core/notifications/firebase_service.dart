@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/constants.dart';
 import '../../firebase_options.dart';
@@ -158,50 +156,10 @@ class FirebaseService {
 }
 
 /// Top-level background message handler (requerido por Firebase, corre en isolate separado).
-/// FIX 3: Si el mensaje no tiene campo "notification" (data-only), lo mostramos
-/// manualmente con flutter_local_notifications. FCM muestra automáticamente los
-/// mensajes que SÍ tienen campo "notification", por eso solo actuamos en data-only.
+/// FCM muestra automáticamente los mensajes con campo "notification".
+/// Los mensajes data-only en background se ignoraran hasta que
+/// flutter_local_notifications sea compatible con el toolchain del proyecto.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Necesario para usar plugins de Flutter en un background isolate
-  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // Si tiene campo "notification", FCM lo muestra solo — no hacer nada
-  if (message.notification != null) return;
-
-  final String title = (message.data['title'] as String?) ?? 'Doctor Parrilla';
-  final String body  = (message.data['body']  as String?) ?? '';
-  if (title.isEmpty && body.isEmpty) return;
-
-  final FlutterLocalNotificationsPlugin plugin = FlutterLocalNotificationsPlugin();
-  await plugin.initialize(
-    const InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      iOS: DarwinInitializationSettings(),
-    ),
-  );
-
-  await plugin.show(
-    // ID único basado en el hash del mensaje para evitar duplicados
-    message.hashCode,
-    title.isEmpty ? null : title,
-    body.isEmpty  ? null : body,
-    const NotificationDetails(
-      android: AndroidNotificationDetails(
-        // Usar el mismo canal definido en AndroidManifest y en la app
-        AppConstants.notificationChannelId,
-        AppConstants.notificationChannelName,
-        channelDescription: AppConstants.notificationChannelDesc,
-        importance: Importance.high,
-        priority:   Priority.high,
-        icon: '@mipmap/ic_launcher',
-      ),
-      iOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: false,
-        presentSound: true,
-      ),
-    ),
-  );
 }
