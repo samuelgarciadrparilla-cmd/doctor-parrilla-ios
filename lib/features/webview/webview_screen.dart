@@ -74,30 +74,31 @@ class _WebViewScreenState extends State<WebViewScreen>
       if (elapsed >= _refreshThreshold) {
         _loadPage();
       } else {
-        // Sincronizar datos de Firebase en el WebView
         _controller.runJavaScript(
           'try{window.postMessage(JSON.stringify({"type":"sync_now"}),"*");}catch(e){}',
         );
       }
 
-      // Re-autenticación biométrica si la sesión expiró (>30s en background)
-      if (!BiometricService.instance.isSessionValid && mounted) {
-        final bool available = await BiometricService.instance.isAvailable();
-        if (available && mounted) {
-          await Navigator.of(context).push(
-            PageRouteBuilder<void>(
-              opaque: false,
-              pageBuilder: (_, __, ___) =>
-                  const BiometricScreen(isOverlay: true),
-              transitionDuration: const Duration(milliseconds: 300),
-              transitionsBuilder:
-                  (_, Animation<double> anim, __, Widget child) {
-                return FadeTransition(opacity: anim, child: child);
-              },
-            ),
-          );
-        }
+      if (!BiometricService.instance.isSessionValid) {
+        _showBiometricOverlay();
       }
+    }
+  }
+
+  Future<void> _showBiometricOverlay() async {
+    if (!mounted) return;
+    final bool available = await BiometricService.instance.isAvailable();
+    if (available && mounted) {
+      await Navigator.of(context).push(
+        PageRouteBuilder<void>(
+          opaque: false,
+          pageBuilder: (_, __, ___) => const BiometricScreen(isOverlay: true),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (_, Animation<double> anim, __, Widget child) {
+            return FadeTransition(opacity: anim, child: child);
+          },
+        ),
+      );
     }
   }
 

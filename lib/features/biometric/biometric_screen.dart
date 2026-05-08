@@ -341,7 +341,7 @@ class _BiometricScreenState extends State<BiometricScreen>
   }
 
   Widget _buildActionArea() {
-    if (_state == _AuthState.failed || _state == _AuthState.cancelled) {
+    if (_state == _AuthState.failed) {
       return SizedBox(
         width: double.infinity,
         height: 52,
