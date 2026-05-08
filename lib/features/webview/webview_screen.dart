@@ -70,6 +70,13 @@ class _WebViewScreenState extends State<WebViewScreen>
       _backgroundedAt = null;
       if (elapsed >= _refreshThreshold) {
         _loadPage();
+      } else {
+        // iOS pausa los timers de JS en WKWebView cuando la app va al background.
+        // Al volver, el setInterval de polling puede quedar congelado.
+        // Este postMessage dispara un sync inmediato en el website.
+        _controller.runJavaScript(
+          'try{window.postMessage(JSON.stringify({"type":"sync_now"}),"*");}catch(e){}',
+        );
       }
     }
   }
