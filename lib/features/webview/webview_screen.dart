@@ -10,6 +10,8 @@ import '../../app/constants.dart';
 import '../../core/connectivity/connectivity_service.dart';
 import '../../core/notifications/firebase_service.dart';
 import '../../shared/theme/app_theme.dart';
+import '../biometric/biometric_screen.dart';
+import '../biometric/biometric_service.dart';
 import 'widgets/loading_widget.dart';
 import 'widgets/no_internet_widget.dart';
 import 'widgets/error_widget.dart';
@@ -68,15 +70,33 @@ class _WebViewScreenState extends State<WebViewScreen>
     } else if (state == AppLifecycleState.resumed && _backgroundedAt != null) {
       final Duration elapsed = DateTime.now().difference(_backgroundedAt!);
       _backgroundedAt = null;
+
       if (elapsed >= _refreshThreshold) {
         _loadPage();
       } else {
-        // iOS pausa los timers de JS en WKWebView cuando la app va al background.
-        // Al volver, el setInterval de polling puede quedar congelado.
-        // Este postMessage dispara un sync inmediato en el website.
+        // Sincronizar datos de Firebase en el WebView
         _controller.runJavaScript(
           'try{window.postMessage(JSON.stringify({"type":"sync_now"}),"*");}catch(e){}',
         );
+      }
+
+      // Re-autenticación biométrica si la sesión expiró (>30s en background)
+      if (!BiometricService.instance.isSessionValid && mounted) {
+        final bool available = await BiometricService.instance.isAvailable();
+        if (available && mounted) {
+          await Navigator.of(context).push(
+            PageRouteBuilder<void>(
+              opaque: false,
+              pageBuilder: (_, __, ___) =>
+                  const BiometricScreen(isOverlay: true),
+              transitionDuration: const Duration(milliseconds: 300),
+              transitionsBuilder:
+                  (_, Animation<double> anim, __, Widget child) {
+                return FadeTransition(opacity: anim, child: child);
+              },
+            ),
+          );
+        }
       }
     }
   }

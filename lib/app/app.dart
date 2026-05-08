@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../shared/theme/app_theme.dart';
-import '../features/webview/webview_screen.dart';
+import '../features/biometric/biometric_screen.dart';
 import 'constants.dart';
 
 /// Root widget of the Doctor Parrilla app.
@@ -13,7 +13,7 @@ class DrParrillaApp extends StatelessWidget {
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const WebViewScreen(),
+      home: const BiometricScreen(),
     );
   }
 }
