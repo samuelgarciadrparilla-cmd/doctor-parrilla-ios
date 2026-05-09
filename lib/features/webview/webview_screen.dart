@@ -198,6 +198,12 @@ class _WebViewScreenState extends State<WebViewScreen>
   }
 
   Future<void> _checkNotificationPermission() async {
+    // Skip notification permission in screenshot mode
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (prefs.getString('screenshot_url') != null) {
+      return;
+    }
+
     final FirebaseService firebase = FirebaseService.instance;
     await firebase.incrementAppOpenCount();
 
