@@ -232,10 +232,26 @@ workflows:
           DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
           import sys, json
           types = json.load(sys.stdin)['devicetypes']
-          for needle in ['iPad Pro 12.9-inch', 'iPad Pro (12.9-inch)', 'iPad Pro 13-inch', 'iPad Pro (13-inch)']:
+          needles = [
+            'iPad Pro 12.9-inch (6th generation)',
+            'iPad Pro 12.9-inch (5th generation)',
+            'iPad Pro 12.9-inch (4th generation)',
+            'iPad Pro 12.9-inch (3rd generation)',
+            'iPad Pro 12.9-inch (2nd generation)',
+            'iPad Pro (12.9-inch)',
+            'iPad Pro 12.9',
+            'iPad Pro 13-inch',
+            'iPad Pro (13-inch)',
+            'iPad Pro 13',
+          ]
+          for needle in needles:
               for t in types:
-                  if needle in t['name']:
+                  if needle.lower() in t['name'].lower():
                       print(t['identifier']); sys.exit(0)
+          # Fallback: any iPad Pro
+          for t in types:
+              if 'iPad Pro' in t['name'] and ('12' in t['name'] or '13' in t['name']):
+                  print(t['identifier']); sys.exit(0)
           sys.exit(1)
           ")
           UDID=$(xcrun simctl create "ss-ipad-129" "$DEVICE_TYPE" "$RUNTIME")
@@ -278,10 +294,22 @@ workflows:
           DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
           import sys, json
           types = json.load(sys.stdin)['devicetypes']
-          for needle in ['iPad Pro 13-inch', 'iPad Pro (13-inch)', 'iPad Pro 12.9-inch']:
+          needles = [
+            'iPad Pro 13-inch (M4)',
+            'iPad Pro 13-inch',
+            'iPad Pro (13-inch)',
+            'iPad Pro 12.9-inch (6th generation)',
+            'iPad Pro 12.9-inch',
+            'iPad Pro (12.9-inch)',
+          ]
+          for needle in needles:
               for t in types:
-                  if needle in t['name']:
+                  if needle.lower() in t['name'].lower():
                       print(t['identifier']); sys.exit(0)
+          # Fallback: any large iPad Pro
+          for t in types:
+              if 'iPad Pro' in t['name'] and ('13' in t['name'] or '12' in t['name']):
+                  print(t['identifier']); sys.exit(0)
           sys.exit(1)
           ")
           UDID=$(xcrun simctl create "ss-ipad-13" "$DEVICE_TYPE" "$RUNTIME")
