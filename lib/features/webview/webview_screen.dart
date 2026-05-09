@@ -308,15 +308,30 @@ class _WebViewScreenState extends State<WebViewScreen>
         child: GestureDetector(
           onTap: _handleLogout,
           child: Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.black.withAlpha(140),
+              color: Colors.black.withAlpha(200),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withAlpha(60),
+                width: 1,
+              ),
             ),
-            child: Icon(
-              Icons.logout,
-              size: 20,
-              color: Colors.white.withAlpha(160),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.logout, size: 16, color: Colors.white.withAlpha(220)),
+                const SizedBox(width: 6),
+                Text(
+                  'Salir',
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(220),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
