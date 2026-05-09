@@ -158,6 +158,9 @@ workflows:
           OUTDIR="$CM_BUILD_DIR/screenshots/iphone_69"
           mkdir -p "$OUTDIR"
 
+          # Pre-grant notification permission to avoid popup blocking screenshots
+          xcrun simctl privacy "$UDID" grant notifications "$BUNDLE_ID" 2>/dev/null || true
+
           take_screenshot() {
             local URL="$1" NAME="$2"
             xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
@@ -195,6 +198,9 @@ workflows:
 
           OUTDIR="$CM_BUILD_DIR/screenshots/iphone_65"
           mkdir -p "$OUTDIR"
+
+          # Pre-grant notification permission to avoid popup blocking screenshots
+          xcrun simctl privacy "$UDID" grant notifications "$BUNDLE_ID" 2>/dev/null || true
 
           take_screenshot() {
             local URL="$1" NAME="$2"
@@ -281,6 +287,9 @@ workflows:
           OUTDIR="$CM_BUILD_DIR/screenshots/ipad_129"
           mkdir -p "$OUTDIR"
 
+          # Pre-grant notification permission to avoid popup blocking screenshots
+          xcrun simctl privacy "$UDID" grant notifications "$BUNDLE_ID" 2>/dev/null || true
+
           take_screenshot() {
             local URL="$1" NAME="$2"
             xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
@@ -361,6 +370,9 @@ workflows:
 
           OUTDIR="$CM_BUILD_DIR/screenshots/ipad_13"
           mkdir -p "$OUTDIR"
+
+          # Pre-grant notification permission to avoid popup blocking screenshots
+          xcrun simctl privacy "$UDID" grant notifications "$BUNDLE_ID" 2>/dev/null || true
 
           take_screenshot() {
             local URL="$1" NAME="$2"
