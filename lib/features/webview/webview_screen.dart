@@ -155,17 +155,9 @@ class _WebViewScreenState extends State<WebViewScreen>
     }
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? screenshotUrl = prefs.getString('screenshot_url');
-    final String? userPhone = prefs.getString('user_phone');
 
-    String targetUrl = screenshotUrl ?? AppConstants.baseUrl;
-
-    // Si hay screenshot_url y user_phone, agregar phone como parámetro para auto-login
-    if (screenshotUrl != null && userPhone != null && userPhone.isNotEmpty) {
-      final Uri uri = Uri.parse(targetUrl);
-      final Map<String, String> params = Map<String, String>.from(uri.queryParameters);
-      params['phone'] = userPhone;
-      targetUrl = uri.replace(queryParameters: params).toString();
-    }
+    // screenshot_url already includes ?phone= for auto-login
+    final String targetUrl = screenshotUrl ?? AppConstants.baseUrl;
 
     _controller.loadRequest(Uri.parse(targetUrl));
   }

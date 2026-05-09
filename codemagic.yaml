@@ -162,8 +162,9 @@ workflows:
             local URL="$1" NAME="$2"
             xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
             sleep 1
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            # Pass phone directly in URL for auto-login
+            local URL_WITH_PHONE="${URL}?phone=${PHONE}"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL_WITH_PHONE"
             xcrun simctl launch "$UDID" "$BUNDLE_ID"
             sleep 28
             xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
@@ -199,8 +200,9 @@ workflows:
             local URL="$1" NAME="$2"
             xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
             sleep 1
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            # Pass phone directly in URL for auto-login
+            local URL_WITH_PHONE="${URL}?phone=${PHONE}"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL_WITH_PHONE"
             xcrun simctl launch "$UDID" "$BUNDLE_ID"
             sleep 28
             xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
@@ -283,8 +285,9 @@ workflows:
             local URL="$1" NAME="$2"
             xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
             sleep 1
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            # Pass phone directly in URL for auto-login
+            local URL_WITH_PHONE="${URL}?phone=${PHONE}"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL_WITH_PHONE"
             xcrun simctl launch "$UDID" "$BUNDLE_ID"
             sleep 30
             xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
@@ -363,8 +366,9 @@ workflows:
             local URL="$1" NAME="$2"
             xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
             sleep 1
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            # Pass phone directly in URL for auto-login
+            local URL_WITH_PHONE="${URL}?phone=${PHONE}"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL_WITH_PHONE"
             xcrun simctl launch "$UDID" "$BUNDLE_ID"
             sleep 30
             xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
