@@ -10,8 +10,6 @@ import '../../app/constants.dart';
 import '../../core/connectivity/connectivity_service.dart';
 import '../../core/notifications/firebase_service.dart';
 import '../../shared/theme/app_theme.dart';
-import '../auth/auth_service.dart';
-import '../auth/login_screen.dart';
 import 'widgets/loading_widget.dart';
 import 'widgets/no_internet_widget.dart';
 import 'widgets/error_widget.dart';
@@ -156,8 +154,19 @@ class _WebViewScreenState extends State<WebViewScreen>
       return;
     }
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String targetUrl =
-        prefs.getString('screenshot_url') ?? AppConstants.baseUrl;
+    final String? screenshotUrl = prefs.getString('screenshot_url');
+    final String? userPhone = prefs.getString('user_phone');
+
+    String targetUrl = screenshotUrl ?? AppConstants.baseUrl;
+
+    // Si hay screenshot_url y user_phone, agregar phone como parámetro para auto-login
+    if (screenshotUrl != null && userPhone != null && userPhone.isNotEmpty) {
+      final Uri uri = Uri.parse(targetUrl);
+      final Map<String, String> params = Map<String, String>.from(uri.queryParameters);
+      params['phone'] = userPhone;
+      targetUrl = uri.replace(queryParameters: params).toString();
+    }
+
     _controller.loadRequest(Uri.parse(targetUrl));
   }
 
@@ -252,20 +261,6 @@ class _WebViewScreenState extends State<WebViewScreen>
     } catch (_) {}
   }
 
-  Future<void> _handleLogout() async {
-    await AuthService.instance.logout();
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder<void>(
-        pageBuilder: (_, _, _) => const LoginScreen(),
-        transitionDuration: const Duration(milliseconds: 300),
-        transitionsBuilder: (_, Animation<double> anim, _, Widget child) {
-          return FadeTransition(opacity: anim, child: child);
-        },
-      ),
-    );
-  }
-
   Future<bool> _handleBackNavigation() async {
     if (await _controller.canGoBack()) {
       await _controller.goBack();
@@ -289,51 +284,7 @@ class _WebViewScreenState extends State<WebViewScreen>
         backgroundColor: AppTheme.primaryBlack,
         body: SafeArea(
           top: false,
-          child: Stack(
-            children: <Widget>[
-              _buildBody(),
-              _buildLogoutButton(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton() {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 8,
-      right: 12,
-      child: SafeArea(
-        child: GestureDetector(
-          onTap: _handleLogout,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withAlpha(200),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withAlpha(60),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(Icons.logout, size: 16, color: Colors.white.withAlpha(220)),
-                const SizedBox(width: 6),
-                Text(
-                  'Salir',
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(220),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: _buildBody(),
         ),
       ),
     );
