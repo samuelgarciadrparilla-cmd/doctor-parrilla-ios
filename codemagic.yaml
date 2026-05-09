@@ -113,10 +113,6 @@ workflows:
         notify:
           success: true
           failure: true
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: alpha
-        submit_as_draft: false
 
   screenshots:
     name: App Store Screenshots
@@ -228,30 +224,23 @@ workflows:
           rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
           print(sorted(rts, key=lambda x: x['version'])[-1]['identifier'])
           ")
+          echo "=== Available iPad types ==="
+          xcrun simctl list devicetypes | grep -i ipad || true
+          echo "==========================="
           DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
           import sys, json
           types = json.load(sys.stdin)['devicetypes']
-          needles = [
-            'iPad Pro 12.9-inch (6th generation)',
-            'iPad Pro 12.9-inch (5th generation)',
-            'iPad Pro 12.9-inch (4th generation)',
-            'iPad Pro 12.9-inch (3rd generation)',
-            'iPad Pro 12.9-inch (2nd generation)',
-            'iPad Pro (12.9-inch)',
-            'iPad Pro 12.9',
-            'iPad Pro 13-inch',
-            'iPad Pro (13-inch)',
-            'iPad Pro 13',
-          ]
-          for needle in needles:
-              for t in types:
-                  if needle.lower() in t['name'].lower():
-                      print(t['identifier']); sys.exit(0)
-          # Fallback: any iPad Pro
-          for t in types:
-              if 'iPad Pro' in t['name'] and ('12' in t['name'] or '13' in t['name']):
-                  print(t['identifier']); sys.exit(0)
-          sys.exit(1)
+          # Buscar cualquier iPad Pro grande, de más reciente a más viejo
+          candidates = [t for t in types if 'iPad Pro' in t['name']]
+          large = [t for t in candidates if any(s in t['name'] for s in ['13','12.9','12-9','11'])]
+          pool = large if large else candidates
+          if pool:
+              pool.sort(key=lambda x: x['name'], reverse=True)
+              print(pool[0]['identifier'])
+          else:
+              # último recurso: cualquier iPad
+              ipads = [t for t in types if 'iPad' in t['name']]
+              if ipads: print(ipads[0]['identifier'])
           ")
           UDID=$(xcrun simctl create "ss-ipad-129" "$DEVICE_TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
@@ -293,23 +282,15 @@ workflows:
           DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
           import sys, json
           types = json.load(sys.stdin)['devicetypes']
-          needles = [
-            'iPad Pro 13-inch (M4)',
-            'iPad Pro 13-inch',
-            'iPad Pro (13-inch)',
-            'iPad Pro 12.9-inch (6th generation)',
-            'iPad Pro 12.9-inch',
-            'iPad Pro (12.9-inch)',
-          ]
-          for needle in needles:
-              for t in types:
-                  if needle.lower() in t['name'].lower():
-                      print(t['identifier']); sys.exit(0)
-          # Fallback: any large iPad Pro
-          for t in types:
-              if 'iPad Pro' in t['name'] and ('13' in t['name'] or '12' in t['name']):
-                  print(t['identifier']); sys.exit(0)
-          sys.exit(1)
+          candidates = [t for t in types if 'iPad Pro' in t['name']]
+          large = [t for t in candidates if any(s in t['name'] for s in ['13','12.9','12-9'])]
+          pool = large if large else candidates
+          if pool:
+              pool.sort(key=lambda x: x['name'], reverse=True)
+              print(pool[0]['identifier'])
+          else:
+              ipads = [t for t in types if 'iPad' in t['name']]
+              if ipads: print(ipads[0]['identifier'])
           ")
           UDID=$(xcrun simctl create "ss-ipad-13" "$DEVICE_TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
