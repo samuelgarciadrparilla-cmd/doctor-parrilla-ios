@@ -3,24 +3,20 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../app/constants.dart';
 import '../../core/connectivity/connectivity_service.dart';
 import '../../core/notifications/firebase_service.dart';
 import '../../shared/theme/app_theme.dart';
-import '../biometric/biometric_screen.dart';
-import '../biometric/biometric_service.dart';
+import '../auth/auth_service.dart';
+import '../auth/login_screen.dart';
 import 'widgets/loading_widget.dart';
 import 'widgets/no_internet_widget.dart';
 import 'widgets/error_widget.dart';
 
-/// Possible states of the WebView screen.
 enum WebViewState { loading, loaded, noInternet, error }
 
-/// Main WebView screen that wraps the Doctor Parrilla website.
-/// Handles all states: loading, loaded, no internet, error, back navigation.
 class WebViewScreen extends StatefulWidget {
   const WebViewScreen({super.key});
 
@@ -33,7 +29,6 @@ class _WebViewScreenState extends State<WebViewScreen>
   late final WebViewController _controller;
   WebViewState _state = WebViewState.loading;
   double _loadingProgress = 0;
-  bool _canGoBack = false;
   DateTime? _backgroundedAt;
 
   static const Duration _refreshThreshold = Duration(minutes: 10);
@@ -78,27 +73,6 @@ class _WebViewScreenState extends State<WebViewScreen>
           'try{window.postMessage(JSON.stringify({"type":"sync_now"}),"*");}catch(e){}',
         );
       }
-
-      if (!BiometricService.instance.isSessionValid) {
-        _showBiometricOverlay();
-      }
-    }
-  }
-
-  Future<void> _showBiometricOverlay() async {
-    if (!mounted) return;
-    final bool available = await BiometricService.instance.isAvailable();
-    if (available && mounted) {
-      await Navigator.of(context).push(
-        PageRouteBuilder<void>(
-          opaque: false,
-          pageBuilder: (_, __, ___) => const BiometricScreen(isOverlay: true),
-          transitionDuration: const Duration(milliseconds: 300),
-          transitionsBuilder: (_, Animation<double> anim, __, Widget child) {
-            return FadeTransition(opacity: anim, child: child);
-          },
-        ),
-      );
     }
   }
 
@@ -129,14 +103,10 @@ class _WebViewScreenState extends State<WebViewScreen>
               setState(() {
                 _state = WebViewState.loaded;
               });
-              _canGoBack = await _controller.canGoBack();
-
-              // Inject FCM token into WebView via JavaScript bridge
               _injectFcmToken();
             }
           },
           onWebResourceError: (WebResourceError error) {
-            // Only handle main frame errors
             if (error.isForMainFrame ?? true) {
               if (mounted) {
                 setState(() {
@@ -147,7 +117,6 @@ class _WebViewScreenState extends State<WebViewScreen>
           },
           onNavigationRequest: (NavigationRequest request) {
             final String url = request.url;
-            // PDFs can't render in WebView — open in system browser
             final bool isPdf = url.toLowerCase().contains('.pdf');
             final bool isExternal = !url.startsWith(AppConstants.baseUrl) &&
                 !url.startsWith('about:');
@@ -175,7 +144,6 @@ class _WebViewScreenState extends State<WebViewScreen>
       }
       return;
     }
-
     _controller.loadRequest(Uri.parse(AppConstants.baseUrl));
   }
 
@@ -191,7 +159,6 @@ class _WebViewScreenState extends State<WebViewScreen>
   }
 
   void _setupNotificationListeners() {
-    // Navigate WebView when notification URL is received
     _notificationUrlSubscription =
         FirebaseService.instance.onNotificationUrl.listen(
       (String url) {
@@ -201,7 +168,6 @@ class _WebViewScreenState extends State<WebViewScreen>
       },
     );
 
-    // Show in-app banner for foreground notifications
     _foregroundMessageSubscription =
         FirebaseService.instance.onForegroundMessage.listen(
       _showInAppNotification,
@@ -213,7 +179,6 @@ class _WebViewScreenState extends State<WebViewScreen>
     await firebase.incrementAppOpenCount();
 
     if (await firebase.shouldRequestPermission()) {
-      // Small delay to let the app settle before showing permission dialog
       await Future<void>.delayed(const Duration(seconds: 3));
       await firebase.requestPermission();
       await firebase.markPermissionAsked();
@@ -242,18 +207,13 @@ class _WebViewScreenState extends State<WebViewScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             if (title.isNotEmpty)
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
             if (body.isNotEmpty) Text(body),
           ],
         ),
         backgroundColor: AppTheme.surfaceDark,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: 'Ver',
@@ -278,17 +238,26 @@ class _WebViewScreenState extends State<WebViewScreen>
     } catch (_) {}
   }
 
-  Future<void> _handleRefresh() async {
-    HapticFeedback.mediumImpact();
-    await _controller.reload();
+  Future<void> _handleLogout() async {
+    await AuthService.instance.logout();
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder<void>(
+        pageBuilder: (_, _, _) => const LoginScreen(),
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (_, Animation<double> anim, _, Widget child) {
+          return FadeTransition(opacity: anim, child: child);
+        },
+      ),
+    );
   }
 
   Future<bool> _handleBackNavigation() async {
     if (await _controller.canGoBack()) {
       await _controller.goBack();
-      return false; // Don't close app
+      return false;
     }
-    return true; // Allow app to close
+    return true;
   }
 
   @override
@@ -306,7 +275,36 @@ class _WebViewScreenState extends State<WebViewScreen>
         backgroundColor: AppTheme.primaryBlack,
         body: SafeArea(
           top: false,
-          child: _buildBody(),
+          child: Stack(
+            children: <Widget>[
+              _buildBody(),
+              _buildLogoutButton(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 8,
+      right: 12,
+      child: SafeArea(
+        child: GestureDetector(
+          onTap: _handleLogout,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(140),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.logout,
+              size: 20,
+              color: Colors.white.withAlpha(160),
+            ),
+          ),
         ),
       ),
     );
