@@ -225,173 +225,67 @@ workflows:
           xcrun simctl delete "$UDID"
       - name: Screenshots - iPad Pro 12.9" (2da gen)
         script: |
+          set -e
           xcrun simctl shutdown all 2>/dev/null || true
-
-          echo "=== Available iOS Runtimes ==="
-          xcrun simctl list runtimes available | grep iOS || true
-          echo "=== All iPad Device Types ==="
-          xcrun simctl list devicetypes | grep -i ipad || true
-          echo "=============================="
 
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
           rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
-          if not rts: sys.exit(1)
           print(sorted(rts, key=lambda x: x['version'])[-1]['identifier'])
-          ") || { echo "ERROR: No iOS runtime — skipping iPad 12.9 screenshots"; exit 0; }
+          ")
           echo "Runtime: $RUNTIME"
 
-          DEVICE_TYPE=""
-          for CANDIDATE in \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4" \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-5th-generation" \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-4th-generation" \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-3rd-generation" \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-2nd-generation"; do
-            if xcrun simctl list devicetypes | grep -qF "$CANDIDATE"; then
-              DEVICE_TYPE="$CANDIDATE"
-              echo "Selected: $DEVICE_TYPE"
-              break
-            fi
-          done
+          # Use iPad Pro 12.9-inch 6th generation (most compatible)
+          UDID=$(xcrun simctl create "ss-ipad-129" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" "$RUNTIME")
+          echo "Created iPad: $UDID"
 
-          if [ -z "$DEVICE_TYPE" ]; then
-            DEVICE_TYPE=$(xcrun simctl list devicetypes | grep "iPad Pro" | \
-              grep -oE "com\.apple\.CoreSimulator\.SimDeviceType\.[A-Za-z0-9-]+" | sort -r | head -1)
-            echo "Fallback device type: $DEVICE_TYPE"
-          fi
-
-          if [ -z "$DEVICE_TYPE" ]; then
-            echo "ERROR: No iPad device type available — skipping iPad 12.9 screenshots"
-            exit 0
-          fi
-
-          UDID=$(xcrun simctl create "ss-ipad-129" "$DEVICE_TYPE" "$RUNTIME" 2>&1)
-          echo "Create result: $UDID"
-          if ! echo "$UDID" | grep -qE '^[0-9A-Fa-f-]{36}$'; then
-            echo "ERROR: Invalid UDID from simctl create — skipping iPad 12.9 screenshots"
-            exit 0
-          fi
-
-          xcrun simctl boot "$UDID" || { echo "Boot failed — skipping"; xcrun simctl delete "$UDID" 2>/dev/null; exit 0; }
-          timeout 600 xcrun simctl bootstatus "$UDID" -b || { echo "Bootstatus timeout — skipping"; xcrun simctl delete "$UDID" 2>/dev/null; exit 0; }
-
-          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app || {
-            echo "ERROR: Install failed — app may not support iPad simulator (check UIDeviceFamily in Info.plist)"
-            xcrun simctl shutdown "$UDID" 2>/dev/null
-            xcrun simctl delete "$UDID" 2>/dev/null
-            exit 0
-          }
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
 
           OUTDIR="$CM_BUILD_DIR/screenshots/ipad_129"
           mkdir -p "$OUTDIR"
 
-          # Pre-grant notification permission to avoid popup blocking screenshots
+          # Pre-grant notification permission
           xcrun simctl privacy "$UDID" grant notifications "$BUNDLE_ID" 2>/dev/null || true
 
-          take_screenshot() {
-            local URL="$1" NAME="$2"
-            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
-            sleep 1
-            # Pass phone directly in URL for auto-login
-            local URL_WITH_PHONE="${URL}?phone=${PHONE}"
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL_WITH_PHONE"
-            xcrun simctl launch "$UDID" "$BUNDLE_ID"
-            sleep 30
-            xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
-              || (sleep 15 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png")
-          }
-
-          take_screenshot "$BASE_URL/"          "1_home"
-          take_screenshot "$BASE_URL/catalogo"  "2_catalogo"
-          take_screenshot "$BASE_URL/catalogo"  "3_detalle"
-          take_screenshot "$BASE_URL/pedidos"   "4_pedidos"
-          take_screenshot "$BASE_URL/perfil"    "5_perfil"
+          # Just launch and screenshot - URL is compiled via --dart-define
+          xcrun simctl launch "$UDID" "$BUNDLE_ID"
+          sleep 35
+          xcrun simctl io "$UDID" screenshot "$OUTDIR/1_home.png"
 
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
       - name: Screenshots - iPad Pro 13" (M4)
         script: |
+          set -e
           xcrun simctl shutdown all 2>/dev/null || true
-
-          echo "=== All iPad Device Types ==="
-          xcrun simctl list devicetypes | grep -i ipad || true
-          echo "=============================="
 
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
           rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
-          if not rts: sys.exit(1)
           print(sorted(rts, key=lambda x: x['version'])[-1]['identifier'])
-          ") || { echo "ERROR: No iOS runtime — skipping iPad 13 screenshots"; exit 0; }
+          ")
           echo "Runtime: $RUNTIME"
 
-          DEVICE_TYPE=""
-          for CANDIDATE in \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4" \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M2" \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" \
-              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-5th-generation"; do
-            if xcrun simctl list devicetypes | grep -qF "$CANDIDATE"; then
-              DEVICE_TYPE="$CANDIDATE"
-              echo "Selected: $DEVICE_TYPE"
-              break
-            fi
-          done
+          # Use iPad Pro 13-inch M4
+          UDID=$(xcrun simctl create "ss-ipad-13" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4" "$RUNTIME")
+          echo "Created iPad 13: $UDID"
 
-          if [ -z "$DEVICE_TYPE" ]; then
-            DEVICE_TYPE=$(xcrun simctl list devicetypes | grep "iPad Pro" | \
-              grep -oE "com\.apple\.CoreSimulator\.SimDeviceType\.[A-Za-z0-9-]+" | sort -r | head -1)
-            echo "Fallback device type: $DEVICE_TYPE"
-          fi
-
-          if [ -z "$DEVICE_TYPE" ]; then
-            echo "ERROR: No iPad device type available — skipping iPad 13 screenshots"
-            exit 0
-          fi
-
-          UDID=$(xcrun simctl create "ss-ipad-13" "$DEVICE_TYPE" "$RUNTIME" 2>&1)
-          echo "Create result: $UDID"
-          if ! echo "$UDID" | grep -qE '^[0-9A-Fa-f-]{36}$'; then
-            echo "ERROR: Invalid UDID from simctl create — skipping iPad 13 screenshots"
-            exit 0
-          fi
-
-          xcrun simctl boot "$UDID" || { echo "Boot failed — skipping"; xcrun simctl delete "$UDID" 2>/dev/null; exit 0; }
-          timeout 600 xcrun simctl bootstatus "$UDID" -b || { echo "Bootstatus timeout — skipping"; xcrun simctl delete "$UDID" 2>/dev/null; exit 0; }
-
-          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app || {
-            echo "ERROR: Install failed — app may not support iPad simulator (check UIDeviceFamily in Info.plist)"
-            xcrun simctl shutdown "$UDID" 2>/dev/null
-            xcrun simctl delete "$UDID" 2>/dev/null
-            exit 0
-          }
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
 
           OUTDIR="$CM_BUILD_DIR/screenshots/ipad_13"
           mkdir -p "$OUTDIR"
 
-          # Pre-grant notification permission to avoid popup blocking screenshots
+          # Pre-grant notification permission
           xcrun simctl privacy "$UDID" grant notifications "$BUNDLE_ID" 2>/dev/null || true
 
-          take_screenshot() {
-            local URL="$1" NAME="$2"
-            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
-            sleep 1
-            # Pass phone directly in URL for auto-login
-            local URL_WITH_PHONE="${URL}?phone=${PHONE}"
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL_WITH_PHONE"
-            xcrun simctl launch "$UDID" "$BUNDLE_ID"
-            sleep 30
-            xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
-              || (sleep 15 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png")
-          }
-
-          take_screenshot "$BASE_URL/"          "1_home"
-          take_screenshot "$BASE_URL/catalogo"  "2_catalogo"
-          take_screenshot "$BASE_URL/catalogo"  "3_detalle"
-          take_screenshot "$BASE_URL/pedidos"   "4_pedidos"
-          take_screenshot "$BASE_URL/perfil"    "5_perfil"
+          # Just launch and screenshot - URL is compiled via --dart-define
+          xcrun simctl launch "$UDID" "$BUNDLE_ID"
+          sleep 35
+          xcrun simctl io "$UDID" screenshot "$OUTDIR/1_home.png"
 
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
