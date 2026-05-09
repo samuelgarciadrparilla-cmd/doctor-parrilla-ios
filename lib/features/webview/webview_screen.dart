@@ -153,11 +153,10 @@ class _WebViewScreenState extends State<WebViewScreen>
       if (mounted) setState(() => _state = WebViewState.noInternet);
       return;
     }
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? screenshotUrl = prefs.getString('screenshot_url');
 
-    // screenshot_url already includes ?phone= for auto-login
-    final String targetUrl = screenshotUrl ?? AppConstants.baseUrl;
+    // Primary: use compile-time SCREENSHOT_URL (for Codemagic screenshots)
+    const String screenshotUrl = String.fromEnvironment('SCREENSHOT_URL', defaultValue: '');
+    final String targetUrl = screenshotUrl.isNotEmpty ? screenshotUrl : AppConstants.baseUrl;
 
     _controller.loadRequest(Uri.parse(targetUrl));
   }
@@ -191,8 +190,8 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   Future<void> _checkNotificationPermission() async {
     // Skip notification permission in screenshot mode
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (prefs.getString('screenshot_url') != null) {
+    const String screenshotUrl = String.fromEnvironment('SCREENSHOT_URL', defaultValue: '');
+    if (screenshotUrl.isNotEmpty) {
       return;
     }
 

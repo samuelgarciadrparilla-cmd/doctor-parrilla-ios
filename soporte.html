@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soporte — Doctor Parrilla</title>
+  <meta name="description" content="Soporte y contacto de Doctor Parrilla Paraguay. Parrillas premium de acero inoxidable.">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --black:  #000000;
+      --white:  #FFFFFF;
+      --gold:   #D4AF37;
+      --gold-dim: rgba(212, 175, 55, 0.15);
+      --surface: #111111;
+      --border:  rgba(212, 175, 55, 0.25);
+      --wa:     #25D366;
+      --wa-hover: #1DA851;
+      --text-muted: rgba(255, 255, 255, 0.60);
+    }
+
+    html, body {
+      min-height: 100%;
+    }
+
+    body {
+      background-color: var(--black);
+      color: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                   Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 64px;
+    }
+
+    /* ── Back link ── */
+    .back-link {
+      align-self: flex-start;
+      max-width: 600px;
+      width: 100%;
+      margin: 0 auto 40px;
+    }
+
+    .back-link a {
+      color: var(--gold);
+      text-decoration: none;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+
+    .back-link a:hover { opacity: 1; }
+
+    .back-link a svg {
+      flex-shrink: 0;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    /* ── Logo ── */
+    .logo {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .logo-wordmark {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.5px;
+    }
+
+    .logo-wordmark span {
+      color: var(--gold);
+    }
+
+    .logo-tagline {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .logo-divider {
+      width: 48px;
+      height: 2px;
+      background: var(--gold);
+      border-radius: 2px;
+      margin: 16px auto 0;
+    }
+
+    /* ── Heading ── */
+    .heading {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .heading h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+
+    .heading p {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    /* ── Contact items ── */
+    .contact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--gold-dim);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+
+    .contact-item-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(212, 175, 55, 0.20);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold);
+    }
+
+    .contact-item-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .contact-item-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 2px;
+    }
+
+    .contact-item-value {
+      font-size: 15px;
+      color: var(--white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .contact-item-value a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .contact-item-value a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── WhatsApp button ── */
+    .btn-whatsapp {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 16px 24px;
+      background: var(--wa);
+      color: #FFFFFF;
+      font-size: 17px;
+      font-weight: 700;
+      border-radius: 14px;
+      text-decoration: none;
+      letter-spacing: 0.2px;
+      transition: background 0.2s, transform 0.1s;
+      margin-bottom: 16px;
+    }
+
+    .btn-whatsapp:hover {
+      background: var(--wa-hover);
+    }
+
+    .btn-whatsapp:active {
+      transform: scale(0.98);
+    }
+
+    /* ── Footer note ── */
+    .footer-note {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      body {
+        padding: 24px 16px 48px;
+      }
+
+      .card {
+        padding: 32px 24px;
+      }
+
+      .logo-wordmark {
+        font-size: 22px;
+      }
+
+      .heading h1 {
+        font-size: 22px;
+      }
+
+      .heading p {
+        font-size: 14px;
+      }
+
+      .btn-whatsapp {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="back-link">
+    <a href="https://drparrillaparaguay.com">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Volver al inicio
+    </a>
+  </div>
+
+  <div class="card">
+
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-wordmark">Doctor <span>Parrilla</span></div>
+      <div class="logo-tagline">Expertos en Parrillas</div>
+      <div class="logo-divider"></div>
+    </div>
+
+    <!-- Heading -->
+    <div class="heading">
+      <h1>¿En qué podemos ayudarte?</h1>
+      <p>¿Tenés alguna consulta sobre nuestra app o productos? Estamos para ayudarte.</p>
+    </div>
+
+    <!-- WhatsApp CTA -->
+    <a class="btn-whatsapp" href="https://wa.me/595994389932" target="_blank" rel="noopener noreferrer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.117 1.528 5.845L.057 23.428a.75.75 0 0 0 .915.915l5.593-1.464A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.726 9.726 0 0 1-4.964-1.358l-.356-.213-3.685.966.984-3.595-.233-.371A9.715 9.715 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
+      </svg>
+      Escribinos por WhatsApp
+    </a>
+
+    <!-- Contact items -->
+    <div class="contact-list">
+
+      <div class="contact-item">
+        <div class="contact-item-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <div class="contact-item-body">
+          <div class="contact-item-label">Email</div>
+          <div class="contact-item-value">
+            <a href="mailto:cotizacion@drparrilla.com.py">cotizacion@drparrilla.com.py</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-item">
+        <div class="contact-item-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="contact-item-body">
+          <div class="contact-item-label">Horario de atención</div>
+          <div class="contact-item-value">Lunes a Viernes · 8:00 – 18:00 (Paraguay)</div>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="footer-note">
+      Doctor Parrilla Paraguay &mdash; Parrillas Premium de Acero Inoxidable
+    </p>
+
+  </div>
+
+</body>
+</html>

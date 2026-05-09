@@ -140,7 +140,7 @@ workflows:
           find . -name "Podfile" -execdir pod install \;
       - name: Build for simulator
         script: |
-          flutter build ios --simulator
+          flutter build ios --simulator --dart-define=SCREENSHOT_URL="${BASE_URL}/?phone=${PHONE}"
       - name: Screenshots - iPhone 16 Pro Max (6.9")
         script: |
           set -e
