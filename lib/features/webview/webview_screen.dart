@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -151,14 +152,13 @@ class _WebViewScreenState extends State<WebViewScreen>
     final bool isConnected =
         await ConnectivityService.instance.checkConnectivity();
     if (!isConnected) {
-      if (mounted) {
-        setState(() {
-          _state = WebViewState.noInternet;
-        });
-      }
+      if (mounted) setState(() => _state = WebViewState.noInternet);
       return;
     }
-    _controller.loadRequest(Uri.parse(AppConstants.baseUrl));
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String targetUrl =
+        prefs.getString('screenshot_url') ?? AppConstants.baseUrl;
+    _controller.loadRequest(Uri.parse(targetUrl));
   }
 
   void _setupConnectivityListener() {

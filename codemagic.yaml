@@ -116,7 +116,7 @@ workflows:
 
   screenshots:
     name: App Store Screenshots
-    max_build_duration: 60
+    max_build_duration: 90
     instance_type: mac_mini_m2
     environment:
       flutter: stable
@@ -126,6 +126,8 @@ workflows:
         - firebase_credentials
       vars:
         BUNDLE_ID: "com.drparrilla.app"
+        PHONE: "+5950991123456"
+        BASE_URL: "https://drparrillaparaguay.com"
     scripts:
       - name: Inject GoogleService-Info.plist
         script: |
@@ -139,82 +141,134 @@ workflows:
       - name: Build for simulator
         script: |
           flutter build ios --simulator
-      - name: Screenshot - iPhone 16 Pro Max (6.9")
+      - name: Screenshots - iPhone 16 Pro Max (6.9")
         script: |
+          set -e
           xcrun simctl shutdown all 2>/dev/null || true
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
-          runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
-          print(sorted(runtimes, key=lambda x: x['version'])[-1]['identifier'])
+          rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
+          print(sorted(rts, key=lambda x: x['version'])[-1]['identifier'])
           ")
-          UDID=$(xcrun simctl create "screenshot-69" "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max" "$RUNTIME")
+          UDID=$(xcrun simctl create "ss-69" "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max" "$RUNTIME")
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
-          xcrun simctl launch "$UDID" "$BUNDLE_ID"
-          sleep 20
-          mkdir -p "$CM_BUILD_DIR/screenshots"
-          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_69.png" \
-            || (sleep 10 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_69.png")
+
+          OUTDIR="$CM_BUILD_DIR/screenshots/iphone_69"
+          mkdir -p "$OUTDIR"
+
+          take_screenshot() {
+            local URL="$1" NAME="$2"
+            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+            sleep 1
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            xcrun simctl launch "$UDID" "$BUNDLE_ID"
+            sleep 28
+            xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
+              || (sleep 10 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png")
+          }
+
+          take_screenshot "$BASE_URL/"          "1_home"
+          take_screenshot "$BASE_URL/catalogo"  "2_catalogo"
+          take_screenshot "$BASE_URL/catalogo"  "3_detalle"
+          take_screenshot "$BASE_URL/pedidos"   "4_pedidos"
+          take_screenshot "$BASE_URL/perfil"    "5_perfil"
+
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
-      - name: Screenshot - iPhone 11 Pro Max (6.5")
+      - name: Screenshots - iPhone 11 Pro Max (6.5")
         script: |
+          set -e
           xcrun simctl shutdown all 2>/dev/null || true
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
-          runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
-          print(sorted(runtimes, key=lambda x: x['version'])[-1]['identifier'])
+          rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
+          print(sorted(rts, key=lambda x: x['version'])[-1]['identifier'])
           ")
-          UDID=$(xcrun simctl create "screenshot-65" "com.apple.CoreSimulator.SimDeviceType.iPhone-11-Pro-Max" "$RUNTIME")
+          UDID=$(xcrun simctl create "ss-65" "com.apple.CoreSimulator.SimDeviceType.iPhone-11-Pro-Max" "$RUNTIME")
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
-          xcrun simctl launch "$UDID" "$BUNDLE_ID"
-          sleep 20
-          mkdir -p "$CM_BUILD_DIR/screenshots"
-          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_65.png" \
-            || (sleep 10 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_65.png")
+
+          OUTDIR="$CM_BUILD_DIR/screenshots/iphone_65"
+          mkdir -p "$OUTDIR"
+
+          take_screenshot() {
+            local URL="$1" NAME="$2"
+            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+            sleep 1
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            xcrun simctl launch "$UDID" "$BUNDLE_ID"
+            sleep 28
+            xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
+              || (sleep 10 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png")
+          }
+
+          take_screenshot "$BASE_URL/"          "1_home"
+          take_screenshot "$BASE_URL/catalogo"  "2_catalogo"
+          take_screenshot "$BASE_URL/catalogo"  "3_detalle"
+          take_screenshot "$BASE_URL/pedidos"   "4_pedidos"
+          take_screenshot "$BASE_URL/perfil"    "5_perfil"
+
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
-      - name: Screenshot - iPad Pro 12.9" (6th gen)
+      - name: Screenshots - iPad Pro 12.9" (2da gen)
         script: |
+          set -e
           xcrun simctl shutdown all 2>/dev/null || true
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
-          runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
-          print(sorted(runtimes, key=lambda x: x['version'])[-1]['identifier'])
+          rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
+          print(sorted(rts, key=lambda x: x['version'])[-1]['identifier'])
           ")
           DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
           import sys, json
           types = json.load(sys.stdin)['devicetypes']
-          # Buscar iPad Pro 12.9 (cualquier variante de RAM/generación), fallback 13'
           for needle in ['iPad Pro 12.9-inch', 'iPad Pro (12.9-inch)', 'iPad Pro 13-inch', 'iPad Pro (13-inch)']:
               for t in types:
                   if needle in t['name']:
                       print(t['identifier']); sys.exit(0)
           sys.exit(1)
           ")
-          echo "Using device type: $DEVICE_TYPE"
-          UDID=$(xcrun simctl create "screenshot-ipad-129" "$DEVICE_TYPE" "$RUNTIME")
+          UDID=$(xcrun simctl create "ss-ipad-129" "$DEVICE_TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
           timeout 600 xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
-          xcrun simctl launch "$UDID" "$BUNDLE_ID"
-          sleep 25
-          mkdir -p "$CM_BUILD_DIR/screenshots"
-          sleep 20
-          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_129.png" \
-            || (sleep 15 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_129.png")
+
+          OUTDIR="$CM_BUILD_DIR/screenshots/ipad_129"
+          mkdir -p "$OUTDIR"
+
+          take_screenshot() {
+            local URL="$1" NAME="$2"
+            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+            sleep 1
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            xcrun simctl launch "$UDID" "$BUNDLE_ID"
+            sleep 30
+            xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
+              || (sleep 15 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png")
+          }
+
+          take_screenshot "$BASE_URL/"          "1_home"
+          take_screenshot "$BASE_URL/catalogo"  "2_catalogo"
+          take_screenshot "$BASE_URL/catalogo"  "3_detalle"
+          take_screenshot "$BASE_URL/pedidos"   "4_pedidos"
+          take_screenshot "$BASE_URL/perfil"    "5_perfil"
+
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
-      - name: Screenshot - iPad Pro 13" (M4)
+      - name: Screenshots - iPad Pro 13" (M4)
         script: |
+          set -e
           xcrun simctl shutdown all 2>/dev/null || true
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
-          runtimes = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
-          print(sorted(runtimes, key=lambda x: x['version'])[-1]['identifier'])
+          rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
+          print(sorted(rts, key=lambda x: x['version'])[-1]['identifier'])
           ")
           DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
           import sys, json
@@ -225,17 +279,80 @@ workflows:
                       print(t['identifier']); sys.exit(0)
           sys.exit(1)
           ")
-          echo "Using device type: $DEVICE_TYPE"
-          UDID=$(xcrun simctl create "screenshot-ipad-13" "$DEVICE_TYPE" "$RUNTIME")
+          UDID=$(xcrun simctl create "ss-ipad-13" "$DEVICE_TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
-          xcrun simctl launch "$UDID" "$BUNDLE_ID"
-          sleep 25
-          mkdir -p "$CM_BUILD_DIR/screenshots"
-          xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_13.png" \
-            || (sleep 10 && xcrun simctl io "$UDID" screenshot "$CM_BUILD_DIR/screenshots/screenshot_ipad_13.png")
+
+          OUTDIR="$CM_BUILD_DIR/screenshots/ipad_13"
+          mkdir -p "$OUTDIR"
+
+          take_screenshot() {
+            local URL="$1" NAME="$2"
+            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+            sleep 1
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            xcrun simctl launch "$UDID" "$BUNDLE_ID"
+            sleep 30
+            xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
+              || (sleep 15 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png")
+          }
+
+          take_screenshot "$BASE_URL/"          "1_home"
+          take_screenshot "$BASE_URL/catalogo"  "2_catalogo"
+          take_screenshot "$BASE_URL/catalogo"  "3_detalle"
+          take_screenshot "$BASE_URL/pedidos"   "4_pedidos"
+          take_screenshot "$BASE_URL/perfil"    "5_perfil"
+
           xcrun simctl shutdown "$UDID"
           xcrun simctl delete "$UDID"
+      - name: Generate CHECKLIST.md
+        script: |
+          OUTDIR="$CM_BUILD_DIR/screenshots"
+          cat > "$OUTDIR/CHECKLIST.md" <<'EOF'
+          # Screenshots CHECKLIST — Dr. Parrilla App Store
+
+          ## Dispositivos
+
+          ### iPhone 6.9" (16 Pro Max)
+          - [ ] 1_home.png
+          - [ ] 2_catalogo.png
+          - [ ] 3_detalle.png
+          - [ ] 4_pedidos.png
+          - [ ] 5_perfil.png
+
+          ### iPhone 6.5" (11 Pro Max)
+          - [ ] 1_home.png
+          - [ ] 2_catalogo.png
+          - [ ] 3_detalle.png
+          - [ ] 4_pedidos.png
+          - [ ] 5_perfil.png
+
+          ### iPad Pro 12.9" (2da gen)
+          - [ ] 1_home.png
+          - [ ] 2_catalogo.png
+          - [ ] 3_detalle.png
+          - [ ] 4_pedidos.png
+          - [ ] 5_perfil.png
+
+          ### iPad Pro 13" (M4)
+          - [ ] 1_home.png
+          - [ ] 2_catalogo.png
+          - [ ] 3_detalle.png
+          - [ ] 4_pedidos.png
+          - [ ] 5_perfil.png
+
+          ## URLs usadas
+          - Home: https://drparrillaparaguay.com/
+          - Catálogo: https://drparrillaparaguay.com/catalogo
+          - Detalle: https://drparrillaparaguay.com/catalogo
+          - Pedidos: https://drparrillaparaguay.com/pedidos
+          - Perfil: https://drparrillaparaguay.com/perfil
+
+          ## Notas
+          - Usuario de prueba: +5950991123456
+          - Detalle usa /catalogo — actualizar URL si se necesita producto específico
+          EOF
     artifacts:
-      - $CM_BUILD_DIR/screenshots/*.png
+      - $CM_BUILD_DIR/screenshots/**
