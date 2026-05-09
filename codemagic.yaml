@@ -217,47 +217,64 @@ workflows:
           xcrun simctl delete "$UDID"
       - name: Screenshots - iPad Pro 12.9" (2da gen)
         script: |
-          # NO set -e — queremos seguir aunque iPad falle, para que el step iPad 13" y CHECKLIST.md corran igual.
           xcrun simctl shutdown all 2>/dev/null || true
+
+          echo "=== Available iOS Runtimes ==="
+          xcrun simctl list runtimes available | grep iOS || true
+          echo "=== All iPad Device Types ==="
+          xcrun simctl list devicetypes | grep -i ipad || true
+          echo "=============================="
+
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
           rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
+          if not rts: sys.exit(1)
           print(sorted(rts, key=lambda x: x['version'])[-1]['identifier'])
-          " 2>/dev/null)
-          echo "RUNTIME=$RUNTIME"
-          echo "=== Available iPad types ==="
-          xcrun simctl list devicetypes | grep -i ipad || true
-          echo "==========================="
-          DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
-          import sys, json
-          types = json.load(sys.stdin)['devicetypes']
-          candidates = [t for t in types if 'iPad Pro' in t['name']]
-          large = [t for t in candidates if any(s in t['name'] for s in ['13','12.9','12-9','11'])]
-          pool = large if large else candidates
-          if pool:
-              pool.sort(key=lambda x: x['name'], reverse=True)
-              print(pool[0]['identifier'])
-          else:
-              ipads = [t for t in types if 'iPad' in t['name']]
-              if ipads: print(ipads[0]['identifier'])
-          " 2>/dev/null)
-          echo "DEVICE_TYPE=$DEVICE_TYPE"
+          ") || { echo "ERROR: No iOS runtime — skipping iPad 12.9 screenshots"; exit 0; }
+          echo "Runtime: $RUNTIME"
 
-          if [ -z "$DEVICE_TYPE" ] || [ -z "$RUNTIME" ]; then
-            echo "WARN: no iPad device type or runtime detectable — skipping iPad 12.9 screenshots"
+          DEVICE_TYPE=""
+          for CANDIDATE in \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4" \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-5th-generation" \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-4th-generation" \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-3rd-generation" \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-2nd-generation"; do
+            if xcrun simctl list devicetypes | grep -qF "$CANDIDATE"; then
+              DEVICE_TYPE="$CANDIDATE"
+              echo "Selected: $DEVICE_TYPE"
+              break
+            fi
+          done
+
+          if [ -z "$DEVICE_TYPE" ]; then
+            DEVICE_TYPE=$(xcrun simctl list devicetypes | grep "iPad Pro" | \
+              grep -oE "com\.apple\.CoreSimulator\.SimDeviceType\.[A-Za-z0-9-]+" | sort -r | head -1)
+            echo "Fallback device type: $DEVICE_TYPE"
+          fi
+
+          if [ -z "$DEVICE_TYPE" ]; then
+            echo "ERROR: No iPad device type available — skipping iPad 12.9 screenshots"
             exit 0
           fi
 
           UDID=$(xcrun simctl create "ss-ipad-129" "$DEVICE_TYPE" "$RUNTIME" 2>&1)
-          if [ -z "$UDID" ] || [[ "$UDID" == *"Error"* ]] || [[ "$UDID" == *"Invalid"* ]]; then
-            echo "WARN: simctl create failed: $UDID"
+          echo "Create result: $UDID"
+          if ! echo "$UDID" | grep -qE '^[0-9A-Fa-f-]{36}$'; then
+            echo "ERROR: Invalid UDID from simctl create — skipping iPad 12.9 screenshots"
             exit 0
           fi
-          echo "UDID=$UDID"
 
-          xcrun simctl boot "$UDID" || true
-          xcrun simctl bootstatus "$UDID" -b || true
-          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app || { echo "WARN install failed"; xcrun simctl delete "$UDID" || true; exit 0; }
+          xcrun simctl boot "$UDID" || { echo "Boot failed — skipping"; xcrun simctl delete "$UDID" 2>/dev/null; exit 0; }
+          timeout 600 xcrun simctl bootstatus "$UDID" -b || { echo "Bootstatus timeout — skipping"; xcrun simctl delete "$UDID" 2>/dev/null; exit 0; }
+
+          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app || {
+            echo "ERROR: Install failed — app may not support iPad simulator (check UIDeviceFamily in Info.plist)"
+            xcrun simctl shutdown "$UDID" 2>/dev/null
+            xcrun simctl delete "$UDID" 2>/dev/null
+            exit 0
+          }
 
           OUTDIR="$CM_BUILD_DIR/screenshots/ipad_129"
           mkdir -p "$OUTDIR"
@@ -266,13 +283,12 @@ workflows:
             local URL="$1" NAME="$2"
             xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
             sleep 1
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE" || true
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL" || true
-            xcrun simctl launch "$UDID" "$BUNDLE_ID" || true
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            xcrun simctl launch "$UDID" "$BUNDLE_ID"
             sleep 30
             xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
-              || (sleep 15 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png") \
-              || echo "WARN: screenshot $NAME failed"
+              || (sleep 15 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png")
           }
 
           take_screenshot "$BASE_URL/"          "1_home"
@@ -281,49 +297,64 @@ workflows:
           take_screenshot "$BASE_URL/pedidos"   "4_pedidos"
           take_screenshot "$BASE_URL/perfil"    "5_perfil"
 
-          xcrun simctl shutdown "$UDID" || true
-          xcrun simctl delete "$UDID" || true
-          exit 0
+          xcrun simctl shutdown "$UDID"
+          xcrun simctl delete "$UDID"
       - name: Screenshots - iPad Pro 13" (M4)
         script: |
-          # NO set -e — defensive: skip gracefully si algo falla.
           xcrun simctl shutdown all 2>/dev/null || true
+
+          echo "=== All iPad Device Types ==="
+          xcrun simctl list devicetypes | grep -i ipad || true
+          echo "=============================="
+
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
           rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
+          if not rts: sys.exit(1)
           print(sorted(rts, key=lambda x: x['version'])[-1]['identifier'])
-          " 2>/dev/null)
-          DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
-          import sys, json
-          types = json.load(sys.stdin)['devicetypes']
-          candidates = [t for t in types if 'iPad Pro' in t['name']]
-          large = [t for t in candidates if any(s in t['name'] for s in ['13','12.9','12-9'])]
-          pool = large if large else candidates
-          if pool:
-              pool.sort(key=lambda x: x['name'], reverse=True)
-              print(pool[0]['identifier'])
-          else:
-              ipads = [t for t in types if 'iPad' in t['name']]
-              if ipads: print(ipads[0]['identifier'])
-          " 2>/dev/null)
-          echo "RUNTIME=$RUNTIME"
-          echo "DEVICE_TYPE=$DEVICE_TYPE"
+          ") || { echo "ERROR: No iOS runtime — skipping iPad 13 screenshots"; exit 0; }
+          echo "Runtime: $RUNTIME"
 
-          if [ -z "$DEVICE_TYPE" ] || [ -z "$RUNTIME" ]; then
-            echo "WARN: no iPad device type or runtime — skipping iPad 13 screenshots"
+          DEVICE_TYPE=""
+          for CANDIDATE in \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4" \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M2" \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" \
+              "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-5th-generation"; do
+            if xcrun simctl list devicetypes | grep -qF "$CANDIDATE"; then
+              DEVICE_TYPE="$CANDIDATE"
+              echo "Selected: $DEVICE_TYPE"
+              break
+            fi
+          done
+
+          if [ -z "$DEVICE_TYPE" ]; then
+            DEVICE_TYPE=$(xcrun simctl list devicetypes | grep "iPad Pro" | \
+              grep -oE "com\.apple\.CoreSimulator\.SimDeviceType\.[A-Za-z0-9-]+" | sort -r | head -1)
+            echo "Fallback device type: $DEVICE_TYPE"
+          fi
+
+          if [ -z "$DEVICE_TYPE" ]; then
+            echo "ERROR: No iPad device type available — skipping iPad 13 screenshots"
             exit 0
           fi
 
           UDID=$(xcrun simctl create "ss-ipad-13" "$DEVICE_TYPE" "$RUNTIME" 2>&1)
-          if [ -z "$UDID" ] || [[ "$UDID" == *"Error"* ]] || [[ "$UDID" == *"Invalid"* ]]; then
-            echo "WARN: simctl create failed: $UDID"
+          echo "Create result: $UDID"
+          if ! echo "$UDID" | grep -qE '^[0-9A-Fa-f-]{36}$'; then
+            echo "ERROR: Invalid UDID from simctl create — skipping iPad 13 screenshots"
             exit 0
           fi
-          echo "UDID=$UDID"
 
-          xcrun simctl boot "$UDID" || true
-          xcrun simctl bootstatus "$UDID" -b || true
-          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app || { echo "WARN install failed"; xcrun simctl delete "$UDID" || true; exit 0; }
+          xcrun simctl boot "$UDID" || { echo "Boot failed — skipping"; xcrun simctl delete "$UDID" 2>/dev/null; exit 0; }
+          timeout 600 xcrun simctl bootstatus "$UDID" -b || { echo "Bootstatus timeout — skipping"; xcrun simctl delete "$UDID" 2>/dev/null; exit 0; }
+
+          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app || {
+            echo "ERROR: Install failed — app may not support iPad simulator (check UIDeviceFamily in Info.plist)"
+            xcrun simctl shutdown "$UDID" 2>/dev/null
+            xcrun simctl delete "$UDID" 2>/dev/null
+            exit 0
+          }
 
           OUTDIR="$CM_BUILD_DIR/screenshots/ipad_13"
           mkdir -p "$OUTDIR"
@@ -332,13 +363,12 @@ workflows:
             local URL="$1" NAME="$2"
             xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
             sleep 1
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE" || true
-            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL" || true
-            xcrun simctl launch "$UDID" "$BUNDLE_ID" || true
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.user_phone" "$PHONE"
+            xcrun simctl spawn "$UDID" defaults write "$BUNDLE_ID" "flutter.screenshot_url" "$URL"
+            xcrun simctl launch "$UDID" "$BUNDLE_ID"
             sleep 30
             xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png" \
-              || (sleep 15 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png") \
-              || echo "WARN: screenshot $NAME failed"
+              || (sleep 15 && xcrun simctl io "$UDID" screenshot "$OUTDIR/${NAME}.png")
           }
 
           take_screenshot "$BASE_URL/"          "1_home"
@@ -347,9 +377,8 @@ workflows:
           take_screenshot "$BASE_URL/pedidos"   "4_pedidos"
           take_screenshot "$BASE_URL/perfil"    "5_perfil"
 
-          xcrun simctl shutdown "$UDID" || true
-          xcrun simctl delete "$UDID" || true
-          exit 0
+          xcrun simctl shutdown "$UDID"
+          xcrun simctl delete "$UDID"
       - name: Generate CHECKLIST.md
         script: |
           OUTDIR="$CM_BUILD_DIR/screenshots"
