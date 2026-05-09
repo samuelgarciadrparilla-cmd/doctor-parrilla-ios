@@ -69,6 +69,7 @@ workflows:
       groups:
         - firebase_credentials
         - android_signing
+        - google_play_credentials
       vars:
         PACKAGE_NAME: "com.drparrilla.paraguay"
     triggering:
@@ -113,6 +114,10 @@ workflows:
         notify:
           success: true
           failure: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: false
 
   screenshots:
     name: App Store Screenshots
