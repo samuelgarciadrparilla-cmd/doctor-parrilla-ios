@@ -69,7 +69,6 @@ workflows:
       groups:
         - firebase_credentials
         - android_signing
-        - google_play_credentials
       vars:
         PACKAGE_NAME: "com.drparrilla.paraguay"
     triggering:
