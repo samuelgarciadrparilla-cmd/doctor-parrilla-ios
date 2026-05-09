@@ -32,10 +32,12 @@ class _WebViewScreenState extends State<WebViewScreen>
   DateTime? _backgroundedAt;
 
   static const Duration _refreshThreshold = Duration(minutes: 10);
+  static const Duration _syncInterval = Duration(seconds: 60);
 
   StreamSubscription<bool>? _connectivitySubscription;
   StreamSubscription<String>? _notificationUrlSubscription;
   StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
+  Timer? _syncTimer;
 
   @override
   void initState() {
@@ -47,15 +49,27 @@ class _WebViewScreenState extends State<WebViewScreen>
       _setupNotificationListeners();
     } catch (_) {}
     _checkNotificationPermission().catchError((_) {});
+    _startSyncTimer();
   }
 
   @override
   void dispose() {
+    _syncTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _connectivitySubscription?.cancel();
     _notificationUrlSubscription?.cancel();
     _foregroundMessageSubscription?.cancel();
     super.dispose();
+  }
+
+  void _startSyncTimer() {
+    _syncTimer = Timer.periodic(_syncInterval, (_) {
+      if (_state == WebViewState.loaded) {
+        _controller.runJavaScript(
+          'try{window.postMessage(JSON.stringify({"type":"sync_now"}),"*");}catch(e){}',
+        );
+      }
+    });
   }
 
   @override
