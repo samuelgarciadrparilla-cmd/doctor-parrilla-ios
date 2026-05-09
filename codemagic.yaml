@@ -126,7 +126,7 @@ workflows:
         - firebase_credentials
       vars:
         BUNDLE_ID: "com.drparrilla.app"
-        PHONE: "+5950991123456"
+        PHONE: "0991123456"
         BASE_URL: "https://drparrillaparaguay.com"
     scripts:
       - name: Inject GoogleService-Info.plist
