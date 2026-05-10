@@ -228,6 +228,10 @@ workflows:
           set -e
           xcrun simctl shutdown all 2>/dev/null || true
 
+          echo "=== Available iPad devices ==="
+          xcrun simctl list devicetypes | grep -i ipad
+          echo "=============================="
+
           RUNTIME=$(xcrun simctl list runtimes available -j | python3 -c "
           import sys, json
           rts = [r for r in json.load(sys.stdin)['runtimes'] if 'iOS' in r['name'] and r['isAvailable']]
@@ -235,8 +239,11 @@ workflows:
           ")
           echo "Runtime: $RUNTIME"
 
-          # Use iPad Pro 12.9-inch 6th generation (most compatible)
-          UDID=$(xcrun simctl create "ss-ipad-129" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" "$RUNTIME")
+          # Find first available iPad Pro device
+          DEVICE_TYPE=$(xcrun simctl list devicetypes | grep -i "ipad pro" | grep -oE "com\.apple\.CoreSimulator\.SimDeviceType\.[A-Za-z0-9-]+" | head -1)
+          echo "Using device: $DEVICE_TYPE"
+
+          UDID=$(xcrun simctl create "ss-ipad-129" "$DEVICE_TYPE" "$RUNTIME")
           echo "Created iPad: $UDID"
 
           xcrun simctl boot "$UDID"
@@ -268,8 +275,14 @@ workflows:
           ")
           echo "Runtime: $RUNTIME"
 
-          # Use iPad Pro 13-inch M4
-          UDID=$(xcrun simctl create "ss-ipad-13" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4" "$RUNTIME")
+          # Find iPad Pro 13-inch or similar
+          DEVICE_TYPE=$(xcrun simctl list devicetypes | grep -i "ipad pro" | grep -i "13\|M4" | grep -oE "com\.apple\.CoreSimulator\.SimDeviceType\.[A-Za-z0-9-]+" | head -1)
+          if [ -z "$DEVICE_TYPE" ]; then
+            DEVICE_TYPE=$(xcrun simctl list devicetypes | grep -i "ipad pro" | grep -oE "com\.apple\.CoreSimulator\.SimDeviceType\.[A-Za-z0-9-]+" | tail -1)
+          fi
+          echo "Using device: $DEVICE_TYPE"
+
+          UDID=$(xcrun simctl create "ss-ipad-13" "$DEVICE_TYPE" "$RUNTIME")
           echo "Created iPad 13: $UDID"
 
           xcrun simctl boot "$UDID"
