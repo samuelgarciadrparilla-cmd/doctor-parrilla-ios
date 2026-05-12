@@ -133,8 +133,17 @@ class _WebViewScreenState extends State<WebViewScreen>
           onNavigationRequest: (NavigationRequest request) {
             final String url = request.url;
             final bool isPdf = url.toLowerCase().contains('.pdf');
+
+            // Allow Firebase Auth internal URLs (iframes for authentication)
+            final bool isFirebaseAuth = url.contains('firebaseapp.com/__/auth') ||
+                url.contains('googleapis.com') ||
+                url.contains('gstatic.com') ||
+                url.contains('accounts.google.com');
+
             final bool isExternal = !url.startsWith(AppConstants.baseUrl) &&
-                !url.startsWith('about:');
+                !url.startsWith('about:') &&
+                !isFirebaseAuth;
+
             if (isPdf || isExternal) {
               _openExternalUrl(url);
               return NavigationDecision.prevent;
@@ -234,10 +243,22 @@ class _WebViewScreenState extends State<WebViewScreen>
         if (window._drParrillaLinksInjected) return;
         window._drParrillaLinksInjected = true;
 
+        // URLs that should NOT be intercepted (Firebase Auth, etc.)
+        const isInternalUrl = (url) => {
+          if (!url) return true;
+          if (url.startsWith('$baseUrl')) return true;
+          if (url.startsWith('/') || url.startsWith('#')) return true;
+          if (url.includes('firebaseapp.com/__/auth')) return true;
+          if (url.includes('googleapis.com')) return true;
+          if (url.includes('gstatic.com')) return true;
+          if (url.includes('accounts.google.com')) return true;
+          return false;
+        };
+
         // Intercept window.open()
         const originalOpen = window.open;
         window.open = function(url, target, features) {
-          if (url && !url.startsWith('$baseUrl') && !url.startsWith('/')) {
+          if (url && !isInternalUrl(url)) {
             if (window.DrParrillaApp) {
               window.DrParrillaApp.postMessage(JSON.stringify({type:'external_url', url:url}));
             }
@@ -249,14 +270,11 @@ class _WebViewScreenState extends State<WebViewScreen>
         // Intercept target="_blank" links
         document.addEventListener('click', function(e) {
           const link = e.target.closest('a[target="_blank"]');
-          if (link && link.href) {
-            const href = link.href;
-            if (!href.startsWith('$baseUrl') && !href.startsWith('/') && !href.startsWith('#')) {
-              e.preventDefault();
-              e.stopPropagation();
-              if (window.DrParrillaApp) {
-                window.DrParrillaApp.postMessage(JSON.stringify({type:'external_url', url:href}));
-              }
+          if (link && link.href && !isInternalUrl(link.href)) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.DrParrillaApp) {
+              window.DrParrillaApp.postMessage(JSON.stringify({type:'external_url', url:link.href}));
             }
           }
         }, true);
