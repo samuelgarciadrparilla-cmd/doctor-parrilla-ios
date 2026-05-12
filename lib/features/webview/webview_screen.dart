@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
@@ -117,6 +118,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                 _state = WebViewState.loaded;
               });
               _injectFcmToken();
+              _injectExternalLinkHandler();
             }
           },
           onWebResourceError: (WebResourceError error) {
@@ -141,7 +143,18 @@ class _WebViewScreenState extends State<WebViewScreen>
           },
         ),
       )
-      ..enableZoom(false);
+      ..enableZoom(false)
+      ..addJavaScriptChannel(
+        'DrParrillaApp',
+        onMessageReceived: (JavaScriptMessage message) {
+          try {
+            final Map<String, dynamic> data = json.decode(message.message);
+            if (data['type'] == 'external_url' && data['url'] != null) {
+              _openExternalUrl(data['url'] as String);
+            }
+          } catch (_) {}
+        },
+      );
 
     _loadPage();
   }
@@ -212,6 +225,45 @@ class _WebViewScreenState extends State<WebViewScreen>
         'window.postMessage({"type": "fcm_token", "token": "$token"}, "*");',
       );
     }
+  }
+
+  Future<void> _injectExternalLinkHandler() async {
+    const String baseUrl = AppConstants.baseUrl;
+    await _controller.runJavaScript('''
+      (function() {
+        if (window._drParrillaLinksInjected) return;
+        window._drParrillaLinksInjected = true;
+
+        // Intercept window.open()
+        const originalOpen = window.open;
+        window.open = function(url, target, features) {
+          if (url && !url.startsWith('$baseUrl') && !url.startsWith('/')) {
+            if (window.DrParrillaApp) {
+              window.DrParrillaApp.postMessage(JSON.stringify({type:'external_url', url:url}));
+            }
+            return null;
+          }
+          return originalOpen.call(window, url, target, features);
+        };
+
+        // Intercept target="_blank" links
+        document.addEventListener('click', function(e) {
+          const link = e.target.closest('a[target="_blank"]');
+          if (link && link.href) {
+            const href = link.href;
+            if (!href.startsWith('$baseUrl') && !href.startsWith('/') && !href.startsWith('#')) {
+              e.preventDefault();
+              e.stopPropagation();
+              if (window.DrParrillaApp) {
+                window.DrParrillaApp.postMessage(JSON.stringify({type:'external_url', url:href}));
+              }
+            }
+          }
+        }, true);
+
+        console.log('[DrParrilla] External link handler injected');
+      })();
+    ''');
   }
 
   void _showInAppNotification(RemoteMessage message) {
