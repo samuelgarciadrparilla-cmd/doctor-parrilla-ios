@@ -134,15 +134,25 @@ class _WebViewScreenState extends State<WebViewScreen>
             final String url = request.url;
             final bool isPdf = url.toLowerCase().contains('.pdf');
 
-            // Allow Firebase Auth internal URLs (iframes for authentication)
-            final bool isFirebaseAuth = url.contains('firebaseapp.com/__/auth') ||
+            // Allow Firebase internal URLs (Auth, Database, Storage, etc.)
+            final bool isFirebaseInternal = url.contains('firebaseapp.com') ||
+                url.contains('firebaseio.com') ||
+                url.contains('firebasestorage.googleapis.com') ||
                 url.contains('googleapis.com') ||
                 url.contains('gstatic.com') ||
                 url.contains('accounts.google.com');
 
+            // If it's a Firebase internal URL, NEVER open externally - just allow or block silently
+            if (isFirebaseInternal) {
+              // Block long-polling URLs from navigating (they should be XHR, not navigation)
+              if (url.contains('.lp?') || url.contains('/.lp')) {
+                return NavigationDecision.prevent;
+              }
+              return NavigationDecision.navigate;
+            }
+
             final bool isExternal = !url.startsWith(AppConstants.baseUrl) &&
-                !url.startsWith('about:') &&
-                !isFirebaseAuth;
+                !url.startsWith('about:');
 
             if (isPdf || isExternal) {
               _openExternalUrl(url);
@@ -243,12 +253,14 @@ class _WebViewScreenState extends State<WebViewScreen>
         if (window._drParrillaLinksInjected) return;
         window._drParrillaLinksInjected = true;
 
-        // URLs that should NOT be intercepted (Firebase Auth, etc.)
+        // URLs that should NOT be intercepted (Firebase internal URLs)
         const isInternalUrl = (url) => {
           if (!url) return true;
           if (url.startsWith('$baseUrl')) return true;
           if (url.startsWith('/') || url.startsWith('#')) return true;
-          if (url.includes('firebaseapp.com/__/auth')) return true;
+          if (url.includes('firebaseapp.com')) return true;
+          if (url.includes('firebaseio.com')) return true;
+          if (url.includes('firebasestorage.googleapis.com')) return true;
           if (url.includes('googleapis.com')) return true;
           if (url.includes('gstatic.com')) return true;
           if (url.includes('accounts.google.com')) return true;
