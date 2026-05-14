@@ -38,9 +38,12 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
-      - name: Build IPA
+      - name: Build iOS
         script: |
-          cat > /tmp/ExportOptions.plist << EOF
+          flutter build ios --release --no-codesign
+      - name: Create Export Options
+        script: |
+          cat > /tmp/ExportOptions.plist << 'EXPORTEOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -51,10 +54,24 @@ workflows:
             <false/>
             <key>uploadSymbols</key>
             <true/>
+            <key>signingStyle</key>
+            <string>automatic</string>
           </dict>
           </plist>
-          EOF
-          flutter build ipa --release --export-options-plist=/tmp/ExportOptions.plist
+          EXPORTEOF
+      - name: Build IPA
+        script: |
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath $CM_BUILD_DIR/build/ios/Runner.xcarchive \
+            archive
+          xcodebuild -exportArchive \
+            -archivePath $CM_BUILD_DIR/build/ios/Runner.xcarchive \
+            -exportOptionsPlist /tmp/ExportOptions.plist \
+            -exportPath $CM_BUILD_DIR/build/ios/ipa
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
