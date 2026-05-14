@@ -132,9 +132,17 @@ class _WebViewScreenState extends State<WebViewScreen>
           },
           onNavigationRequest: (NavigationRequest request) {
             final String url = request.url;
-            final bool isPdf = url.toLowerCase().contains('.pdf');
+            final String urlLower = url.toLowerCase();
+            final bool isPdf = urlLower.contains('.pdf');
 
-            // Allow Firebase internal URLs (Auth, Database, Storage, etc.)
+            // BLOCK all Firebase Realtime Database long-polling URLs (pattern: /.lp?)
+            // These come from Firebase SDK and should NEVER cause navigation
+            if (urlLower.contains('firebaseio.com') &&
+                (urlLower.contains('.lp') || urlLower.contains('/.lp') || urlLower.contains('?dframe='))) {
+              return NavigationDecision.prevent;
+            }
+
+            // Allow other Firebase internal URLs (Auth, Storage, etc.) - navigate silently
             final bool isFirebaseInternal = url.contains('firebaseapp.com') ||
                 url.contains('firebaseio.com') ||
                 url.contains('firebasestorage.googleapis.com') ||
@@ -142,12 +150,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                 url.contains('gstatic.com') ||
                 url.contains('accounts.google.com');
 
-            // If it's a Firebase internal URL, NEVER open externally - just allow or block silently
             if (isFirebaseInternal) {
-              // Block long-polling URLs from navigating (they should be XHR, not navigation)
-              if (url.contains('.lp?') || url.contains('/.lp')) {
-                return NavigationDecision.prevent;
-              }
               return NavigationDecision.navigate;
             }
 
