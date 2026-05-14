@@ -98,6 +98,13 @@ class _WebViewScreenState extends State<WebViewScreen>
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
+            // BLOCK Firebase long-polling URLs immediately
+            final String urlLower = url.toLowerCase();
+            if (urlLower.contains('firebaseio.com') &&
+                (urlLower.contains('.lp') || urlLower.contains('dframe='))) {
+              _controller.loadRequest(Uri.parse(AppConstants.baseUrl));
+              return;
+            }
             if (mounted) {
               setState(() {
                 _state = WebViewState.loading;
@@ -335,6 +342,13 @@ class _WebViewScreenState extends State<WebViewScreen>
   }
 
   Future<void> _openExternalUrl(String url) async {
+    // NEVER open Firebase URLs externally
+    final String urlLower = url.toLowerCase();
+    if (urlLower.contains('firebaseio.com') ||
+        urlLower.contains('firebaseapp.com') ||
+        urlLower.contains('googleapis.com')) {
+      return;
+    }
     try {
       final Uri uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
