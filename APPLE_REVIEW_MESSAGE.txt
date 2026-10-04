@@ -1,0 +1,46 @@
+Dear App Review Team,
+
+Thank you for your feedback. We have addressed all issues in this new build (2.1.3, Build 163):
+
+## Issues Resolved
+
+### 1. App Restart on Launch - FIXED
+The app no longer restarts when opened. We identified that Firebase Realtime Database long-polling URLs were incorrectly triggering WebView navigation. These internal Firebase SDK URLs are now properly blocked.
+
+### 2. Login Flow - FIXED
+The app now requests the phone number only once. Session persistence works correctly via localStorage and survives app restarts.
+
+### 3. Account Deletion (Guideline 5.1.1v) - IMPLEMENTED
+Account deletion is now available in the app:
+- Location: Support tab (Soporte) → "Eliminar mi cuenta" (Delete my account)
+- Users can select a reason from 5 options and optionally provide feedback
+- All user data is permanently marked as deleted
+- Local session data is cleared
+- User is logged out after deletion
+
+### 4. Safari/iPad Compatibility - VERIFIED
+The app renders correctly on all iOS devices including iPads.
+
+## Demo Account for Testing
+
+- Phone Number: 0991123456
+- Password: (none required)
+- Instructions: Enter the phone number on the login screen and tap "INGRESAR"
+
+## How to Test Account Deletion
+
+1. Log in with demo account 0991123456
+2. Navigate to "SOPORTE" tab (bottom right)
+3. Scroll down to find "Eliminar mi cuenta" button
+4. Select a deletion reason
+5. Optionally add a comment
+6. Tap "Confirmar eliminación"
+7. Account will be deleted and user logged out
+
+This demo account provides full client experience including order tracking, support tickets, and account management.
+
+Thank you for your continued support.
+
+Best regards,
+Dr. Parrilla Paraguay Team
+drparrillaparaguay@gmail.com

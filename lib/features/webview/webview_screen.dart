@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../app/constants.dart';
@@ -141,6 +145,16 @@ class _WebViewScreenState extends State<WebViewScreen>
             final String urlLower = url.toLowerCase();
             final bool isPdf = urlLower.contains('.pdf');
 
+            // Descargas generadas en la página (QR de garantía, backups): no son
+            // páginas para "abrir" — data: se guarda/comparte; blob: lo resuelve el JS inyectado.
+            if (urlLower.startsWith('data:')) {
+              _saveDownload(url, null);
+              return NavigationDecision.prevent;
+            }
+            if (urlLower.startsWith('blob:')) {
+              return NavigationDecision.prevent;
+            }
+
             // BLOCK all Firebase Realtime Database long-polling URLs (pattern: /.lp?)
             // These come from Firebase SDK and should NEVER cause navigation
             if (urlLower.contains('firebaseio.com') &&
@@ -179,10 +193,18 @@ class _WebViewScreenState extends State<WebViewScreen>
             final Map<String, dynamic> data = json.decode(message.message);
             if (data['type'] == 'external_url' && data['url'] != null) {
               _openExternalUrl(data['url'] as String);
+            } else if (data['type'] == 'download' && data['url'] != null) {
+              _saveDownload(data['url'] as String, data['filename'] as String?);
             }
           } catch (_) {}
         },
       );
+
+    // Sin estos handlers, WKWebView descarta alert() y responde "Cancelar" a todo
+    // confirm() sin mostrar nada → p. ej. "Eliminar pedido entregado" no hacía nada.
+    _controller
+      ..setOnJavaScriptAlertDialog(_onJavaScriptAlert)
+      ..setOnJavaScriptConfirmDialog(_onJavaScriptConfirm);
 
     _loadPage();
   }
@@ -288,6 +310,38 @@ class _WebViewScreenState extends State<WebViewScreen>
           return originalOpen.call(window, url, target, features);
         };
 
+        // Descargas (QR de garantía = data:, backup = blob:) → la app las guarda/comparte.
+        const isDownloadLink = (a) => !!(a && a.href &&
+          (a.hasAttribute('download') || a.href.startsWith('data:') || a.href.startsWith('blob:')));
+        const sendDownload = (href, filename) => {
+          if (!window.DrParrillaApp) return;
+          const post = (dataUrl) => window.DrParrillaApp.postMessage(
+            JSON.stringify({type:'download', url:dataUrl, filename:filename || ''}));
+          if (href.startsWith('blob:')) {
+            fetch(href).then(r => r.blob()).then(b => {
+              const reader = new FileReader();
+              reader.onload = () => post(reader.result);
+              reader.readAsDataURL(b);
+            }).catch(() => {});
+          } else {
+            post(href);
+          }
+        };
+        document.addEventListener('click', function(e) {
+          const a = e.target.closest('a');
+          if (isDownloadLink(a)) {
+            e.preventDefault();
+            e.stopPropagation();
+            sendDownload(a.href, a.getAttribute('download'));
+          }
+        }, true);
+        // a.click() sobre un <a> que no está en el documento (no dispara el listener de arriba)
+        const originalAnchorClick = HTMLAnchorElement.prototype.click;
+        HTMLAnchorElement.prototype.click = function() {
+          if (isDownloadLink(this)) { sendDownload(this.href, this.getAttribute('download')); return; }
+          return originalAnchorClick.call(this);
+        };
+
         // Intercept target="_blank" links
         document.addEventListener('click', function(e) {
           const link = e.target.closest('a[target="_blank"]');
@@ -341,19 +395,107 @@ class _WebViewScreenState extends State<WebViewScreen>
   }
 
   Future<void> _openExternalUrl(String url) async {
-    // NEVER open Firebase URLs externally
+    debugPrint('[DrParrilla] Opening external URL: $url');
+
     final String urlLower = url.toLowerCase();
     if (urlLower.contains('firebaseio.com') ||
         urlLower.contains('firebaseapp.com') ||
         urlLower.contains('googleapis.com')) {
+      debugPrint('[DrParrilla] Blocked Firebase URL');
+      return;
+    }
+
+    try {
+      final Uri uri = Uri.parse(url);
+      final bool canLaunch = await canLaunchUrl(uri);
+      debugPrint('[DrParrilla] canLaunchUrl: $canLaunch');
+
+      if (canLaunch) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        debugPrint('[DrParrilla] canLaunchUrl false, trying platformDefault');
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      debugPrint('[DrParrilla] Error opening URL: $e');
+    }
+  }
+
+  Future<void> _onJavaScriptAlert(JavaScriptAlertDialogRequest request) async {
+    if (!mounted) return;
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (BuildContext ctx) => CupertinoAlertDialog(
+        content: Text(request.message),
+        actions: <Widget>[
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _onJavaScriptConfirm(
+      JavaScriptConfirmDialogRequest request) async {
+    if (!mounted) return false;
+    final bool? accepted = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => CupertinoAlertDialog(
+        content: Text(request.message),
+        actions: <Widget>[
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
+    return accepted ?? false;
+  }
+
+  /// Guarda una descarga generada por la web (data: URL) y abre el menú nativo
+  /// de compartir (Guardar imagen / Archivos / WhatsApp...). URLs http(s) se abren afuera.
+  Future<void> _saveDownload(String url, String? filename) async {
+    if (!url.startsWith('data:')) {
+      await _openExternalUrl(url);
       return;
     }
     try {
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (_) {}
+      final UriData data = UriData.parse(url);
+      final String ext = switch (data.mimeType) {
+        'image/png' => '.png',
+        'image/jpeg' => '.jpg',
+        'application/pdf' => '.pdf',
+        'application/json' => '.json',
+        _ => '',
+      };
+      String name = (filename ?? '').trim().replaceAll(RegExp(r'[/\\:]'), '_');
+      if (name.isEmpty) name = 'DrParrilla_${DateTime.now().millisecondsSinceEpoch}$ext';
+      if (!name.contains('.')) name = '$name$ext';
+
+      final Directory dir = await getTemporaryDirectory();
+      final File file = File('${dir.path}/$name');
+      await file.writeAsBytes(data.contentAsBytes(), flush: true);
+      if (!mounted) return;
+
+      // iPad exige un origen para el popover de compartir
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(ShareParams(
+        files: <XFile>[XFile(file.path, mimeType: data.mimeType)],
+        sharePositionOrigin:
+            box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+      ));
+    } catch (e) {
+      debugPrint('[DrParrilla] Error guardando descarga: $e');
+    }
   }
 
   Future<bool> _handleBackNavigation() async {

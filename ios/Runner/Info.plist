@@ -43,6 +43,8 @@
 	<string>Doctor Parrilla necesita acceso a la camara para que puedas tomar fotos de tus parrillas.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Doctor Parrilla necesita acceso a tus fotos para que puedas compartir imagenes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Doctor Parrilla guarda en tus fotos las imágenes que descargás, como el QR de garantía de tu parrilla.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Doctor Parrilla necesita acceso al microfono para mensajes de voz.</string>
 
