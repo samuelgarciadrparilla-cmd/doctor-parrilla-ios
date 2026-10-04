@@ -143,7 +143,9 @@ class _WebViewScreenState extends State<WebViewScreen>
           onNavigationRequest: (NavigationRequest request) {
             final String url = request.url;
             final String urlLower = url.toLowerCase();
-            final bool isPdf = urlLower.contains('.pdf');
+            // Mirar solo el path: el visor de Google (docs.google.com/viewer?url=...pdf)
+            // lleva ".pdf" en la query y NO es un PDF.
+            final bool isPdf = _isFileUrl(url);
 
             // Descargas generadas en la página (QR de garantía, backups): no son
             // páginas para "abrir" — data: se guarda/comparte; blob: lo resuelve el JS inyectado.
@@ -162,6 +164,18 @@ class _WebViewScreenState extends State<WebViewScreen>
               return NavigationDecision.prevent;
             }
 
+            // PDFs / archivos de Storage (catálogo, garantía, contrato) → visor dentro de la app
+            if (isPdf) {
+              _openExternalUrl(url);
+              return NavigationDecision.prevent;
+            }
+
+            // Cargas dentro de un iframe (visor de PDF de Google + su drive.google.com/auth_warmup):
+            // no son navegación del usuario. Antes se mandaban a Safari → página de Drive en blanco.
+            if (!request.isMainFrame) {
+              return NavigationDecision.navigate;
+            }
+
             // Allow other Firebase internal URLs (Auth, Storage, etc.) - navigate silently
             final bool isFirebaseInternal = url.contains('firebaseapp.com') ||
                 url.contains('firebaseio.com') ||
@@ -177,7 +191,7 @@ class _WebViewScreenState extends State<WebViewScreen>
             final bool isExternal = !url.startsWith(AppConstants.baseUrl) &&
                 !url.startsWith('about:');
 
-            if (isPdf || isExternal) {
+            if (isExternal) {
               _openExternalUrl(url);
               return NavigationDecision.prevent;
             }
@@ -291,7 +305,9 @@ class _WebViewScreenState extends State<WebViewScreen>
           if (url.startsWith('/') || url.startsWith('#')) return true;
           if (url.includes('firebaseapp.com')) return true;
           if (url.includes('firebaseio.com')) return true;
-          if (url.includes('firebasestorage.googleapis.com')) return true;
+          // Archivos de Firebase Storage (catálogo, garantía, contrato): NO son internos,
+          // window.open/_blank hacia ellos no hacía nada en iOS → los abre la app.
+          if (url.includes('firebasestorage.googleapis.com')) return false;
           if (url.includes('googleapis.com')) return true;
           if (url.includes('gstatic.com')) return true;
           if (url.includes('accounts.google.com')) return true;
@@ -398,15 +414,22 @@ class _WebViewScreenState extends State<WebViewScreen>
     debugPrint('[DrParrilla] Opening external URL: $url');
 
     final String urlLower = url.toLowerCase();
-    if (urlLower.contains('firebaseio.com') ||
-        urlLower.contains('firebaseapp.com') ||
-        urlLower.contains('googleapis.com')) {
+    final bool isFile = _isFileUrl(url);
+    if (!isFile &&
+        (urlLower.contains('firebaseio.com') ||
+            urlLower.contains('firebaseapp.com') ||
+            urlLower.contains('googleapis.com'))) {
       debugPrint('[DrParrilla] Blocked Firebase URL');
       return;
     }
 
     try {
       final Uri uri = Uri.parse(url);
+      // PDFs/archivos: visor dentro de la app (SFSafariViewController, con Compartir/Guardar)
+      if (isFile) {
+        await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+        return;
+      }
       final bool canLaunch = await canLaunchUrl(uri);
       debugPrint('[DrParrilla] canLaunchUrl: $canLaunch');
 
@@ -419,6 +442,14 @@ class _WebViewScreenState extends State<WebViewScreen>
     } catch (e) {
       debugPrint('[DrParrilla] Error opening URL: $e');
     }
+  }
+
+  /// Archivo descargable (PDF por path o cualquier objeto de Firebase Storage).
+  static bool _isFileUrl(String url) {
+    final Uri? uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    return uri.host.contains('firebasestorage.googleapis.com') ||
+        Uri.decodeComponent(uri.path).toLowerCase().endsWith('.pdf');
   }
 
   Future<void> _onJavaScriptAlert(JavaScriptAlertDialogRequest request) async {
